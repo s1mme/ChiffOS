@@ -1,0 +1,28 @@
+WARNINGS := -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align \
+                -Wwrite-strings -Wredundant-decls -Wnested-externs -Winline \
+-Wuninitialized -Wstrict-prototypes \
+-Wno-unused-parameter -Wno-cast-align -Werror
+
+CC = i586-pc-chiffos-gcc
+CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static
+LD = i586-pc-chiffos-ld
+LDFLAGS := -T../user.ld
+
+SRCFILES := $(shell find . -type f -name '*.c')
+OBJFILES := $(patsubst %.c,%.o,$(SRCFILES))
+DEPFILES := $(patsubst %.c,%.d,$(SRCFILES))
+
+OUTNAME := $(shell basename `pwd`)
+
+all: $(OBJFILES)
+
+	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES)
+	@mv -f $(OUTNAME) ../../misc/
+
+clean:
+	-$(RM) $(wildcard $(OBJFILES) $(DEPFILES) ../misc/$(OUTNAME))
+
+	-include $(DEPFILES)
+
+%.o: %.c Makefile
+	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
