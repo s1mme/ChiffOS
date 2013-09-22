@@ -1,5 +1,6 @@
 #include <types.h>
 #include <video.h>
+
 struct multiboot
 {
    u32 flags;
@@ -31,5 +32,11 @@ struct multiboot
 
 void kmain(struct multiboot *mbp, u32 magic)
 {
-	  clear();
+	  init_video_term();
+	  char *text = "hello world";
+	  kputs("\n\nmuu");
+	  kputhex(magic);
+	  int tal = 100;
+	  kputint(tal);
+	  kprint("%d, %x, %s",tal,magic,text);
 }
