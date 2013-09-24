@@ -1,6 +1,7 @@
 #include <types.h>
 #include <stddef.h> /*size_t*/
-
+#include <video.h>
+#include <kutils.h>
 u16 *memsetw(u16 *dest, u16 value, int count)
 {
 	u16 *temp = (u16 *)dest;
@@ -27,6 +28,24 @@ void *memcpy(void *dest,const void *src,size_t n) {
   return dest;
 }
 
+void *memset(void *dest,int val,size_t n) { 
+  u32 num_dwords = n/4;
+  u32 num_bytes = n%4;
+  u32 *dest32 = (u32*)dest;
+  u8 *dest8 = ((u8*)dest)+num_dwords*4;
+  u8 val8 = (u8)val;
+  u32 val32 = val|(val<<8)|(val<<16)|(val<<24);
+  u32 i;
+
+  for (i=0;i<num_dwords;i++) {
+    dest32[i] = val32;
+  }
+  for (i=0;i<num_bytes;i++) {
+    dest8[i] = val8;
+  }
+  return dest;
+}
+
 size_t strlen(const char* str)
 {
 	size_t ret = 0;
@@ -37,5 +56,5 @@ size_t strlen(const char* str)
 
 void outb(u16 port, u8 data)
 {	
-__asm__ __volatile__("outb %1, %0" : : "dN" (port), "a" (data));		
+	__asm__ __volatile__("outb %1, %0" : : "dN" (port), "a" (data));		
 }

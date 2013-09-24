@@ -2,12 +2,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <video.h>
+#include <kutils.h>
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 u16 *video_ram = (u16 *)0xB8000;
 u8 term_color;
-int c_y;
-int c_x;
+u32 c_y;
+u32 c_x;
 enum vga_color
 {
 	COLOR_BLACK = 0,
@@ -39,7 +40,7 @@ u16 make_vga_entry(char c, u8 color)
 
 void clear()
 {
-	int i;
+	u32 i;
 	for(i = 0; i < VGA_HEIGHT; i++)
 	{
 	memsetw(video_ram + i*VGA_WIDTH, make_vga_entry(' ',make_color(COLOR_BLACK,COLOR_BLACK)),VGA_WIDTH);
@@ -51,14 +52,14 @@ void set_term_color(u8 color)
 term_color = color;
 }
 
-init_video_term()
+void init_video_term()
 {
 	clear();
 	c_y = 0;
 	c_x = 0;
 	set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));
 }
-void update_cursor()
+void update_cursor(void)
 {
 	u16 curloc = c_y * 80 + c_x; 
 	outb(0x3D4, 14);
@@ -68,23 +69,18 @@ void update_cursor()
 }
 void scroll(void)
 {
-    if(c_y >= VGA_HEIGHT)
+    if(c_y >= 25)
     {
-        memcpy (video_ram, video_ram +  VGA_WIDTH, VGA_HEIGHT * VGA_WIDTH * 2);
-        memsetw (video_ram + VGA_HEIGHT * VGA_WIDTH, make_vga_entry(' ',make_color(COLOR_BLACK,COLOR_BLACK)), VGA_WIDTH);
-        c_y = VGA_HEIGHT - 1;
+        memcpy (video_ram, video_ram +  80, 24 * 80 * 2);
+        memsetw (video_ram + 24 * 80, make_vga_entry(' ',make_color(COLOR_BLACK,COLOR_BLACK)), 80);
+        c_y = 25 - 1;
     }
 }
+
 void kputch(char c)
 {
 	u16 *where;
-	if(c >= ' ')
-	{
-		where = video_ram + (c_y * 80 + c_x);
-		*where = make_vga_entry(c,term_color);
-		c_x++;
-	}	
-	else if(c == 0x08)
+	 if(c == 0x08)
 	{
 		if(c_x != 0)c_x--;
 	}
@@ -106,15 +102,24 @@ void kputch(char c)
 	{
 		c_x = 0;		
 	}
+	
+	else if(c >= ' ')
+	{
+		where = video_ram + (c_y * 80 + c_x);
+		*where = make_vga_entry(c,term_color);
+		c_x++;
+		
+	}	
 	scroll();
 	update_cursor();
 }
 
-void kputs(char *text)
+void kputs(const char *text)
 {
-	int i = 0;
+	u32 i = 0;
 	while(i < strlen(text))
 		kputch(text[i++]);
+		
 }
 
 void vprintf(const char *args, va_list ap)
@@ -140,6 +145,7 @@ void vprintf(const char *args, va_list ap)
 					}								
 			break;
 			default:
+			kputch(*args);
 			break;
 			}			
 		args++; 	
@@ -153,4 +159,5 @@ void kprint(const char *fmt, ...)
 	vprintf(fmt, ap);
 	va_end(ap);
     update_cursor();
+    
 }
