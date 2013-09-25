@@ -5,8 +5,10 @@
 #include <video.h>
 #include <kutils.h>
 #include <irq.h>
+#include <heapmngr.h>
 #define DESCSIZE 32
 #define PAGE_SIZE 0x1000
+extern heap_t *heap; 
 u32 p_kmalloc(u32 size, u32 align, u32 *phys);
 u32 *frames;
 u32 num_pages;
@@ -16,6 +18,7 @@ struct p_directory *pkdirectory;
  
 u32 pagefault_handler(u32 esp)
 {
+	
    struct regs *r = (struct regs *)esp;
    u32 faulting_address;
    __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
@@ -27,7 +30,7 @@ u32 pagefault_handler(u32 esp)
   /* int id = r->err_code & 0x10;*/         
   
    if(present)
-		kprint("Present ");
+		kprint("Page not present! ");
    if(rw)
 		kprint("Read-only ");
    if(us)
@@ -36,7 +39,7 @@ u32 pagefault_handler(u32 esp)
 		kprint("Reserved ");
    kprint("faulting adress @: %x\n", faulting_address);
    for(;;);
-   return ;
+   return 0 ;
 }
 
 u32 _pmm_find_first_free_frame_addr()
@@ -136,13 +139,23 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	kprint("[INFO] placement_address: %x\n", placement_address);
 	
 	u32 i = 0;
-	while(i < placement_address)
+	while(i < placement_address+0x100000)
 	 {
 		_vmmngr_alloc_frame(_vmm_get_page_addr(i,1,pkdirectory),0,1);
 		i += 0x1000; 
 	}
+	 i = 0;
+	 
+   for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
+       _vmm_get_page_addr(i, 1, pkdirectory);
+
+   for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
+       _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 0);
+	
+	
 	
 	register_device(14, pagefault_handler);
 	_vmmngr_switch_directory(pkdirectory);
+	heap = _heapmngr_initialize(KHEAP_START, KHEAP_INITIAL_SIZE, HEAP_INDEX_SIZE);
 }
 

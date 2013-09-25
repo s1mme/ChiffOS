@@ -25,6 +25,8 @@ struct p_directory
 	u32 tablephysical[1024];
 }__attribute__((packed));
 
-
+void _vmmngr_alloc_frame(struct p_pages *page, int is_kernel, int is_writeable);
+struct p_pages *_vmm_get_page_addr(u32 addr, u32 make, struct p_directory *dir);
+u32 p_kmalloc(u32 size, u32 align, u32 *phys);
 
 #endif

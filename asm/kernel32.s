@@ -1,10 +1,8 @@
-;=======================================================  ;
-;  kernel entry point!                                                    ;
-;=======================================================  ; 
-[BITS 32]
 
+section .text
+align 4
 ;imports
-extern kmain
+
 extern gdtpointer
 extern idtpointer
 
@@ -17,22 +15,7 @@ global gdt_flush
 global tss_flush
 global kputhex
 global kputint
-GRUB_FLAGS equ 10b
-GRUB_MAGIC equ 0x1BADB002
-GRUB_CHECK equ -(GRUB_FLAGS + GRUB_MAGIC)
 
-align 4
-	dd GRUB_MAGIC
-	dd GRUB_FLAGS
-	dd GRUB_CHECK
-
-loader:
-	mov esp, 0x190000
-	push eax					;magic
-	push ebx					;adress of Multiboot struct
-
-	call kmain
-	jmp $
 	
 gdt_flush:
 	lgdt [gdtpointer] 
@@ -57,19 +40,19 @@ tss_flush:
 	ret
 
 ; IRQ handling
+text:
 
-; Create a stub handler, since each IRQ needs its own function
-%macro IRQ 2 ; 2 arguments, IRQ number and the ISR number we map it to
+%macro IRQ 2 
 [GLOBAL irq%1]
 irq%1:
 cli
-push byte 0 ; IRQ handlers (like ISR handlers) use the registers_t struct, so we need this dummy "error code"
+push byte 0
 push byte %2
 jmp irq_common_stub
 %endmacro
 
 
-; Create the IRQ handlers and map them to better ISR numbers
+
 IRQ 0, 32
 IRQ 1, 33
 IRQ 2, 34
