@@ -8,7 +8,7 @@
 #include <heapmngr.h>
 #define DESCSIZE 32
 #define PAGE_SIZE 0x1000
-extern heap_t *heap; 
+ heap_t *heap; 
 u32 p_kmalloc(u32 size, u32 align, u32 *phys);
 u32 *frames;
 u32 num_pages;
@@ -150,12 +150,12 @@ void _vmmngr_initialize(struct multiboot *mbp)
        _vmm_get_page_addr(i, 1, pkdirectory);
 
    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
-       _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 0);
+       _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
 	
 	
 	
 	register_device(14, pagefault_handler);
 	_vmmngr_switch_directory(pkdirectory);
-	heap = _heapmngr_initialize(KHEAP_START, KHEAP_INITIAL_SIZE, HEAP_INDEX_SIZE);
+	heap = _heapmngr_initialize(KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, HEAP_INDEX_SIZE);
 }
 

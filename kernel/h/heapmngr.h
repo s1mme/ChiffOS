@@ -8,11 +8,14 @@
 #define HEAP_INDEX_SIZE   0x200000
 #define HEAP_MAGIC        0x123890AB
 #define HEAP_MIN_SIZE     0x7000000
+typedef void* type_t;
+
 typedef struct 
 {
-	void *element;
+	void **element;
 	u32 size;
 	u32 maxsize;
+
 }table_t;
 
 
@@ -21,14 +24,14 @@ typedef struct
 	u32 size;
 	u8 is_hole;
 	u32 magic;		
-}header_t;
+}element_desc_head;
 
 typedef struct
 {
 	u32 magic;
-	header_t *header;
+	element_desc_head *header;
 	
-}footer_t;
+}element_desc_foot;
 
 typedef struct
 {
