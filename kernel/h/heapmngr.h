@@ -24,14 +24,14 @@ typedef struct
 	u32 size;
 	u8 is_hole;
 	u32 magic;		
-}element_desc_head;
+}desc_head;
 
 typedef struct
 {
 	u32 magic;
-	element_desc_head *header;
+	desc_head *header;
 	
-}element_desc_foot;
+}desc_foot;
 
 typedef struct
 {

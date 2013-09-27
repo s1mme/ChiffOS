@@ -58,3 +58,10 @@ void outb(u16 port, u8 data)
 {	
 	__asm__ __volatile__("outb %1, %0" : : "dN" (port), "a" (data));		
 }
+
+u8 inb(u16 port)
+{
+   u8 ret;
+   __asm__ volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
+   return ret;
+}

@@ -8,6 +8,7 @@
 #include <multiboot.h>
 #include <vmmngr.h>
 #include <heapmngr.h>
+#include <kbd.h>
 void kmain(struct multiboot *mbp, u32 magic)
 {
 	
@@ -18,6 +19,7 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  irq_install();
 	  timer_install(100);
 	  _vmmngr_initialize(mbp);
+	  _kbd_initialize();
 	  __asm__ volatile("sti");
 	  
 	  u32 a = kmalloc(8);
@@ -30,7 +32,13 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  u32 c = kmalloc(12);
 	  kprint("c: %x\n", c);
 	  free(c);
-
+	  u32 d = kmalloc(20);
+	  kprint("d: %x\n", d);
+u8 test;
+while(1)
+{
+	kputch(getchar());
+}
 	/*  u32 *ptr = (u32*)0x600000;
 	  u32 do_page_fault = *ptr;*/
 	  for(;;);
