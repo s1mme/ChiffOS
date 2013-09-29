@@ -5,9 +5,9 @@
 
 #define KHEAP_START         0xC0000000
 #define KHEAP_INITIAL_SIZE  0x10000000
-#define HEAP_INDEX_SIZE   0x200000
-#define HEAP_MAGIC        0x123890AB
-#define HEAP_MIN_SIZE     0x7000000
+#define HEAP_INDEX_SIZE   	0x200000
+#define HEAP_MAGIC          0x123890AB
+#define HEAP_MIN_SIZE       0x7000000
 typedef void* type_t;
 
 typedef struct 

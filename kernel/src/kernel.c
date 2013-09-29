@@ -9,6 +9,7 @@
 #include <vmmngr.h>
 #include <heapmngr.h>
 #include <kbd.h>
+
 void kmain(struct multiboot *mbp, u32 magic)
 {
 	
@@ -34,8 +35,9 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  free(c);
 	  u32 d = kmalloc(20);
 	  kprint("d: %x\n", d);
-
+	  free(d);
 	  scan_pci_bus(0);
+	  ata_init_and_detect_drives();
 	while(1)
 	{
 	  kputch(getchar());

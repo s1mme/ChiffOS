@@ -2,30 +2,22 @@
 #define PCI_H
 #include <types.h>
 	
-	
 #define PCI_INTERRUPT_LINE		0x3c	
-
 #define PCI_STPCI				0x09
 #define PCI_INFINIBAND			0x0a	
 #define PCI_BRIDGE_OTHER		0x80
 #define PCI_VENDOR_ID			0x00		
 #define PCI_DEVICE_ID			0x02		
-#define PCI_COMMAND				0x04	
-		
+#define PCI_COMMAND				0x04		
 #define PCI_STATUS				0x06		
 #define PCI_REVISION			0x08		
 #define PCI_CLASS_API			0x09		
 #define PCI_CLASS_SUB			0x0a	
-#define PCI_CLASS_BASE			0x0b		
-				
+#define PCI_CLASS_BASE			0x0b					
 #define PCI_BIST				0x0f		
-#define PCI_BASE_REGISTERS		0x10	
-
-	
+#define PCI_BASE_REGISTERS		0x10		
 #define PCI_STATUS				0x06
 #define	PCI_CAPABILITY_LIST		0x34	
-
-	
 
 typedef struct
 {
@@ -72,7 +64,6 @@ typedef struct
     } u;
     int nHandle;
 } PCI_table;
-
 
 void scan_pci_bus( int BusNum);
 u16 read_pci_config( u32 BusNum, u32 DevNum, u32 FncNum, u32 Offset, u32 Size );
