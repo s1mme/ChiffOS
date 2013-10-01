@@ -38,6 +38,8 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  free(d);
 	  scan_pci_bus(0);
 	  ata_init_and_detect_drives();
+	  write_disc_sector();
+	  read_disc_sector();
 	while(1)
 	{
 	  kputch(getchar());

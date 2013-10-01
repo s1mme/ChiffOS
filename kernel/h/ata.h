@@ -22,10 +22,21 @@ struct ide_device {
    u8  Model[41];   
 } ide_devices[4];
 void ata_init_and_detect_drives();
+void read_disc_sector();
+void write_disc_sector();
 
+#define ATA_CMD_CACHE_FLUSH       0xE7
+#define ATA_CMD_CACHE_FLUSH_EXT   0xEA
+#define ATA_CMD_PACKET            0xA0
+#define ATA_REG_DATA       0x00
 #define ATA_PRIMARY 0x00
 #define      ATA_SECONDARY    0x01
  
+#define ATA_CMD_READ_PIO          0x20
+#define ATA_CMD_READ_PIO_EXT      0x24
+
+#define ATA_CMD_WRITE_PIO         0x30
+#define ATA_CMD_WRITE_PIO_EXT     0x34
 
 #define      ATA_READ      0x00
 #define      ATA_WRITE     0x01
@@ -51,6 +62,8 @@ void ata_init_and_detect_drives();
 #define ATA_REG_BASE_SEC 0x170
 #define ATA_REG_DEV_CONTROL_PRI 0x3f6 
 #define ATA_REG_DEV_CONTROL_SEC 0x376
+
+#define ATA_CMD_READ_PIO          0x20
 
 #define ATA_SR_BSY     0x80
 #define ATA_SR_DRDY    0x40
@@ -88,4 +101,32 @@ void ata_init_and_detect_drives();
 #define ATA_IDENT_MAX_LBA      120
 #define ATA_IDENT_COMMANDSETS  164
 #define ATA_IDENT_MAX_LBA_EXT  200
+
+
+/* ATA commands we use */
+#define ATA_CMD_IDENTIFY 0xec
+#define ATA_CMD_READ_SECTORS 0x20
+#define ATA_CMD_WRITE_SECTORS 0x30
+#define ATA_CMD_READ_MULTIPLE 0xc4
+#define ATA_CMD_WRITE_MULTIPLE 0xc5
+#define ATA_CMD_SET_MULTIPLE_MODE 0xc6
+#define ATA_CMD_SET_FEATURES 0xef
+
+#define ATA_REG_DATA       0x00
+#define ATA_REG_ERROR      0x01
+#define ATA_REG_FEATURES   0x01
+#define ATA_REG_SECCOUNT0  0x02
+#define ATA_REG_LBA0       0x03
+#define ATA_REG_LBA1       0x04
+#define ATA_REG_LBA2       0x05
+#define ATA_REG_HDDEVSEL   0x06
+#define ATA_REG_COMMAND    0x07
+#define ATA_REG_STATUS     0x07
+#define ATA_REG_SECCOUNT1  0x08
+#define ATA_REG_LBA3       0x09
+#define ATA_REG_LBA4       0x0A
+#define ATA_REG_LBA5       0x0B
+#define ATA_REG_CONTROL    0x0C
+#define ATA_REG_ALTSTATUS  0x0C
+#define ATA_REG_DEVADDRESS 0x0D
 #endif

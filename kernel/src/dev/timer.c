@@ -38,3 +38,13 @@ void timer_install(u32 frequency)
 	register_device(0,timer_handle);
 	
 }
+
+int sleep(u32 ms) { 
+	
+    u32 t = ms/10;
+   
+    if (t == 0)t = 1;
+	u32 start_ticks = gettickcount();
+	while(start_ticks = gettickcount() < start_ticks + t) {}
+	return start_ticks;
+}
