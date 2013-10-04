@@ -9,4 +9,7 @@ size_t strlen(const char* str);
 u16 *memsetw(u16 *dest, u16 value, int count);
 void *memcpy(void *dest,const void *src,size_t n);
 void *memset(void *dest,int val,size_t n);
+void ToDosFileName (const char* filename,
+            char* fname,
+            unsigned int FNameLength);
 #endif

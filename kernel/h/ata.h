@@ -22,8 +22,8 @@ struct ide_device {
    u8  Model[41];   
 } ide_devices[4];
 void ata_init_and_detect_drives();
-void read_disc_sector();
-void write_disc_sector();
+u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum);
+void write_disc_sector(u32 lba_start_num);
 
 #define ATA_CMD_CACHE_FLUSH       0xE7
 #define ATA_CMD_CACHE_FLUSH_EXT   0xEA

@@ -136,11 +136,6 @@ ide_cntrl_write_reg(channel, ATA_REG_LBA0, (lba_addr & 0x00000FF) >> 0);
 ide_cntrl_write_reg(channel, ATA_REG_LBA1, (lba_addr & 0x000FF00) >> 8);
 ide_cntrl_write_reg(channel, ATA_REG_LBA2, (lba_addr & 0x0FF0000) >> 16);
 
-
-/*
-ide_cntrl_write_reg(channel, ATA_REG_LBA0, (lba_addr & 0xff));
-	ide_cntrl_write_reg(channel, ATA_REG_LBA1, ((lba_addr >> 8) & 0xff));
-	ide_cntrl_write_reg(channel, ATA_REG_LBA1, ((lba_addr >> 16) & 0xff));*/
 /*send read or write command*/
 if(direction == 0)
 ide_cntrl_write_reg(channel, ATA_REG_COMMAND, ATA_CMD_READ_PIO);
@@ -156,11 +151,16 @@ if(direction == 0) /*read*/
 ide_cntrl_write_reg(channel, ATA_REG_CONTROL, 0);
 int i;
       for (i = 0; i < NumSectors; i++) {
+		  int y;
+		  for( y = 0; y < 4; y++)
+      ide_cntrl_read_reg(channel, ATA_REG_ALTSTATUS); 
+  
+   while (ide_cntrl_read_reg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
+      ; 
 		  __asm__ __volatile__("pushw %es");
          __asm__ __volatile__("mov %%ax, %%es" : : "a"(selector));
          __asm__ __volatile__("rep insw" : : "c"(words), "d"(bus), "D"(edi));
-          __asm__ __volatile__("popw %es");
-         edi += (words*2);
+          __asm__ __volatile__("popw %es");    
       }
 }
 else /*write*/
@@ -174,18 +174,23 @@ outw(port, words[i]);
 
 }
 }
+
 #define WRITE_SECTOR 1
 #define READ_SECTOR 0
-void read_disc_sector()
+u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum)
 {
 /*testing*/
-u8 edi[8096];
-ide_cntrl_access_sector(4,0,READ_SECTOR,1,0x000,edi);
+
+sector += 1;
+ide_cntrl_access_sector(sector,LBAnum,READ_SECTOR,1,0x000,edi);
     int c;
-for ( c = 0; c < 2048; c++ )
+    
+for ( c = 0; c < 512; c++ )
 {
-	kprint("%x", edi[c]);
+kprint("%x", edi[c]);
 }
+
+return edi;
 /*error checking*/
 }
 
@@ -206,7 +211,7 @@ ide_cntrl_read_reg(channel, ATA_REG_ALTSTATUS);
 ide_cntrl_read_reg(channel, ATA_REG_STATUS);
 
 ata_irq_counts++;
-kprint("ATA irq count: %d", ata_irq_counts);
+/*kprint("ATA irq count: %d", ata_irq_counts);*/
 return esp;
 }
 

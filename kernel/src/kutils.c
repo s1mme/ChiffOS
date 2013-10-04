@@ -88,3 +88,51 @@ u32 inl(u16 port)
     __asm__ volatile ("in %%dx,%%eax" : "=a" (ret_val) : "d"(port));
     return ret_val;
 }
+
+u32 strcmp(const char *s1, const char *s2)
+{
+	while((*s1) && (*s1 == *s2))
+	{
+		++s1;
+		++s2;
+	}	
+	return (*s1 - *s2);
+}
+#define toupper(c)      ((c) - 0x20 * (((c) >= 'a') && ((c) <= 'z')))
+void ToDosFileName (const char* filename,
+            char* fname,
+            unsigned int FNameLength) {
+
+	unsigned int  i=0;
+
+	if (FNameLength > 11)
+		return;
+
+	if (!fname || !filename)
+		return;
+
+
+	memset (fname, ' ', FNameLength);
+
+
+	for (i=0; i < strlen(filename)-1 && i < FNameLength; i++) {
+
+		if (filename[i] == '.' || i==8 )
+			break;
+
+		fname[i] = toupper (filename[i] );
+	}
+
+	if (filename[i]=='.') {
+int k;
+
+		for ( k=0; k<3; k++) {
+
+			++i;
+			if ( filename[i] )
+				fname[8+k] = filename[i];
+		}
+	}
+	for (i = 0; i < 3; i++)
+		fname[8+i] = toupper (fname[8+i]);
+}
