@@ -163,7 +163,7 @@ u32 isr_handler(u32 esp)
 		kprint("CS =%x EIP=%x EFLAGS=%x USERESP=%x\n", r->cs, r->eip, r->eflags, r->useresp);
 		kprint("INT=%02dd ERR_CODE=0x%x DS=%x\n", r->int_no, r->err_code, r->ds);
 		kprint("\n");
-			
+		for(;;);
 			
 	}
 	u32 (*handler)(struct regs *r); 

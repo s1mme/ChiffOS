@@ -3,7 +3,8 @@
 #include <kutils.h>
 #include <irq.h>
 #include <ata.h>
-
+CHANNELS channels[2];
+IDE_DEVICES ide_devices[4];
 u8 buffer[2048] = {0};
 
 u32 ata_irq_counts = 0;
@@ -69,7 +70,7 @@ sleep(100);
 /* Polling */
 if (ide_cntrl_read_reg(i, ATA_REG_STATUS) == 0)
 {
-kprint("No device!");
+kprint("\nNo device!\n");
 continue;	
 }
 /*Probe for ATAPI Devices:*/
@@ -160,7 +161,8 @@ int i;
 		  __asm__ __volatile__("pushw %es");
          __asm__ __volatile__("mov %%ax, %%es" : : "a"(selector));
          __asm__ __volatile__("rep insw" : : "c"(words), "d"(bus), "D"(edi));
-          __asm__ __volatile__("popw %es");    
+          __asm__ __volatile__("popw %es"); 
+          edi += (words*2);   
       }
 }
 else /*write*/
@@ -184,12 +186,12 @@ u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum)
 sector += 1;
 ide_cntrl_access_sector(sector,LBAnum,READ_SECTOR,1,0x000,edi);
     int c;
-    
-for ( c = 0; c < 512; c++ )
+#ifdef DEBUGGING
+for ( c = 0; c < (sector*512); c++ )
 {
 kprint("%x", edi[c]);
 }
-
+#endif
 return edi;
 /*error checking*/
 }

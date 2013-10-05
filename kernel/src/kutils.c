@@ -98,9 +98,20 @@ u32 strcmp(const char *s1, const char *s2)
 	}	
 	return (*s1 - *s2);
 }
+int strncmp( const char *s1,  const char *s2, size_t n) {
+unsigned char uc1, uc2;
+if (n == 0 || s1 == 0 || s2 == 0)
+return 0;
+/* Loop, comparing bytes. */
+while (n-- > 0 && *s1 == *s2) {
+if (n == 0 || *s1 == '\0')
+return 0;
+s1++, s2++;
+}
+}
 #define toupper(c)      ((c) - 0x20 * (((c) >= 'a') && ((c) <= 'z')))
 void ToDosFileName (const char* filename,
-            char* fname,
+              char* fname,
             unsigned int FNameLength) {
 
 	unsigned int  i=0;

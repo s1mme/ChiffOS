@@ -2,15 +2,15 @@
 #define ATA_H
 #include <types.h>
 
-struct IDEChannelRegisters {
+typedef struct IDEChannelRegisters {
    u16 base;  
    u16 ctrl;  
    u16 bmide; 
    u8  nIEN;  
-} channels[2];
+};
+typedef struct IDEChannelRegisters CHANNELS;
 
-
-struct ide_device {
+typedef struct ide_device {
    u8  Reserved;   
    u8  Channel;     
    u8  Drive;     
@@ -20,7 +20,9 @@ struct ide_device {
    u32   CommandSets;
    u32   Size;        
    u8  Model[41];   
-} ide_devices[4];
+};
+
+typedef struct ide_device IDE_DEVICES;
 void ata_init_and_detect_drives();
 u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum);
 void write_disc_sector(u32 lba_start_num);
