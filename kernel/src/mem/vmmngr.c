@@ -139,12 +139,19 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	kprint("[INFO] placement_address: %x\n", placement_address);
 	
 	u32 i = 0;
-	while(i < placement_address+0x1000000)
+	while(i < placement_address+0x6000000)
 	 {
 		_vmmngr_alloc_frame(_vmm_get_page_addr(i,1,pkdirectory),0,1);
 		i += 0x1000; 
 	}
 	 i = 0;
+	 
+	  for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
+      _vmm_get_page_addr(i, 1, pkdirectory);
+	 
+   for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
+       _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
+	
 	 
    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
        _vmm_get_page_addr(i, 1, pkdirectory);

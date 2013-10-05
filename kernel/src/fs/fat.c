@@ -8,7 +8,18 @@ BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
 void read_file(FILE file);
+void write_file(FILE file,char *buf, u8 method );
+void ls_dir();
 FILE parse_dir( char* DirectoryName);
+
+
+char file_meta_data[] =
+{
+ 0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
+ 0x74, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 
+ 0x4d, 0x55, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x58, 0x54, 0x20, 0x00, 0x00, 0x39, 0x0a,  
+ 0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00
+};
 void mount_fat32()
 {
 	set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));
@@ -26,12 +37,16 @@ void mount_fat32()
 	kprint("sector per cluster %d\n", bootsector->sectors_per_cluster);
 	kprint("sectors_per_fat %d\n", bootsector->num_fats);
 #endif	
-	free(bootsector);
-	
-	FILE file = parse_dir("MUU     TXT");
+	free(bootsector);	
+}
+
+void FAT_testing()
+{
+	FILE file = parse_dir("STORFIL TXT");
+	write_file(file,file_meta_data,1);
 	ls_dir();
-	read_file(file);
 	
+	read_file(file);	
 }
 
 #define FS_FILE       0
@@ -48,7 +63,7 @@ FILE parse_dir( char* DirectoryName)
 	int i;
 	directory = (DIRECTORY*) buf;
 
-	    for (i=0; i<6; i++) {		
+	    for (i=0; i<128; i++) {		
     			char name[11];
     			memcpy (name, directory->Filename, 11);
     			name[11]=0;
@@ -78,33 +93,43 @@ FILE parse_dir( char* DirectoryName)
 	}
 	return file;
 }
-#define SECTOR_PER_ClUSTER 8
+#define SECTOR_PER_CLUSTER 8
 #define CLUSTER_SIZE 512*8
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
-void read_file(FILE file)
-{
 u8 FAT_table[CLUSTER_SIZE];
+void read_file(FILE file )
+{
+
 u32 sector_count = file.fileLength/SECTOR_SIZE;
-unsigned int cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_ClUSTER;
+u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 
 int i;
 for(i = 0; i < file.fileLength; i++)
-	{
+	{	
 	kputch(FAT_table[i]);
 	}
 }
 
-
-void open_dir()
+void write_file(FILE file , char *buf, u8 method)
 {
-	
+u32 cluster_start_lba;
+if(method == 1) /*write metadata e.g create files*/
+cluster_start_lba = _MountInfo.rootOffset;
+
+if(method == 2) /*write contents to that file*/
+cluster_start_lba = _MountInfo.rootOffset +(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
+
+write_disc_sector(cluster_start_lba,buf);
+
 }
-#define NUM_FILES 8
+
+#define NUM_FILES 16
+
 void ls_dir()
 {
-
+	FILE file;
 	unsigned char buf[512];
 	directory = (DIRECTORY*)kmalloc(sizeof(directory));	
 	read_disc_sector(0,buf,_MountInfo.rootOffset);
@@ -118,6 +143,25 @@ void ls_dir()
     			name[11]=0;
     				if (directory->Attrib == 0x20 || directory->Attrib == 0x10)
 						kprint("%s %d BYTES\n",name, directory->FileSize);
+    	 directory++;
+    	 
+	}
+	/*SUBdirs and subfiles and prints out subfiles data*/
+	directory = (DIRECTORY*) &FAT_table;
+
+	    for (i=0; i<NUM_FILES; i++) {		
+    			char name[11];
+    			memcpy (name, directory->Filename, 11);
+    			name[11]=0;
+    				if (directory->Attrib == 0x20)
+    				{
+						kprint("%s %d BYTES\n",name, directory->FileSize);
+						file.id             = 0;
+						file.currentCluster = directory->FirstCluster;
+						file.eof            = 0;
+						file.fileLength     = directory->FileSize;
+					    read_file(file);
+					}
     	 directory++;
 	}
 }

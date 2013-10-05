@@ -196,11 +196,11 @@ return edi;
 /*error checking*/
 }
 
-void write_disc_sector(u32 lba_start_num)
+void write_disc_sector(u32 lba_start_num,char *buf)
 {
-lba_start_num = 0;
-char buf[512];
-memset(buf, 0xff, 512);
+/*lba_start_num = 0;*/
+
+/*memset(buf, 0xff, 512);*/
 ide_cntrl_access_sector(1,lba_start_num,WRITE_SECTOR,1,0x000, buf);
 }
 
