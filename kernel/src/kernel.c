@@ -9,6 +9,7 @@
 #include <vmmngr.h>
 #include <heapmngr.h>
 #include <kbd.h>
+#include <fat.h>
 
 void kmain(struct multiboot *mbp, u32 magic)
 {
@@ -42,6 +43,8 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  /*read_disc_sector(1);*/
 	   mount_fat32();
 	   FAT_testing();
+	   _task_initialize();
+	   TASK_testing();
 	while(1)
 	{
 	  kputch(getchar());

@@ -4,6 +4,7 @@
 #include <video.h>
 #include <irq.h>
 #include <isr.h>
+#include <proc.h>
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -179,6 +180,9 @@ u32 irq_handler(u32 esp)
 {
 	
 	struct regs *r = (struct regs*)esp;
+	
+	if(task_switching)
+		esp = _task_switch(esp);
 
 	u32 (*handler)(struct regs *r); 
 	
@@ -190,5 +194,6 @@ u32 irq_handler(u32 esp)
 	     outb(0xA0, 0x20);
 	     
 	outb(0x20,0x20);
+
 	return esp;
 }

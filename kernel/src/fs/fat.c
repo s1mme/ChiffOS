@@ -9,25 +9,30 @@ MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
 void read_file(FILE file);
 void write_file(FILE file,char *buf, u8 method );
-void ls_dir();
+u8 *ls_dir();
 FILE parse_dir( char* DirectoryName);
-
 
 char file_meta_data[] =
 {
  0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
  0x74, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 
  0x4d, 0x55, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x58, 0x54, 0x20, 0x00, 0x00, 0x39, 0x0a,  
- 0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00
+ 0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00,
+ 
+ 0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
+ 0x74, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 
+ 0x4d, 0x55, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x58, 0x54, 0x20, 0x00, 0x00, 0x39, 0x0a,  
+ 0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00,
 };
+
 void mount_fat32()
 {
 	set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));
 	bootsector = (BOOTSECTOR_t*)kmalloc(sizeof(BOOTSECTOR_t));
 	read_disc_sector(0,bootsector,0);
 	
-	_MountInfo.numSectors     = bootsector->total_sectors;
-	_MountInfo.rootOffset     = (bootsector->num_fats * bootsector->sectors_per_fat) + bootsector->reserved_sectors;
+	_MountInfo.numSectors = bootsector->total_sectors;
+	_MountInfo.rootOffset = (bootsector->num_fats * bootsector->sectors_per_fat) + bootsector->reserved_sectors;
 #ifdef DEBUGGING	
 	kprint("Sectors available: %x\n", _MountInfo.numSectors );
 	kprint("rootOffset: %d\n", _MountInfo.rootOffset);
@@ -37,15 +42,19 @@ void mount_fat32()
 	kprint("sector per cluster %d\n", bootsector->sectors_per_cluster);
 	kprint("sectors_per_fat %d\n", bootsector->num_fats);
 #endif	
-	free(bootsector);	
+	free(bootsector);
 }
 
 void FAT_testing()
-{
-	FILE file = parse_dir("STORFIL TXT");
+{	
+	FILE file;
+	file_meta_data[32] = 'W';
+
 	write_file(file,file_meta_data,1);
-	ls_dir();
-	
+	u8 *filename = ls_dir();
+	file = parse_dir(filename);
+		
+	write_file(file,"hello how are you?",2);
 	read_file(file);	
 }
 
@@ -108,7 +117,8 @@ read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 int i;
 for(i = 0; i < file.fileLength; i++)
 	{	
-	kputch(FAT_table[i]);
+		if(!file.eof)
+			kputch(FAT_table[i]);
 	}
 }
 
@@ -122,12 +132,11 @@ if(method == 2) /*write contents to that file*/
 cluster_start_lba = _MountInfo.rootOffset +(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 
 write_disc_sector(cluster_start_lba,buf);
-
 }
 
-#define NUM_FILES 16
+#define NUM_FILES 8
 
-void ls_dir()
+u8 *ls_dir()
 {
 	FILE file;
 	unsigned char buf[512];
@@ -142,9 +151,11 @@ void ls_dir()
     			memcpy (name, directory->Filename, 11);
     			name[11]=0;
     				if (directory->Attrib == 0x20 || directory->Attrib == 0x10)
+    				{
 						kprint("%s %d BYTES\n",name, directory->FileSize);
-    	 directory++;
-    	 
+						/*return directory->Filename;*/
+					}
+    	 directory++;    	 
 	}
 	/*SUBdirs and subfiles and prints out subfiles data*/
 	directory = (DIRECTORY*) &FAT_table;
@@ -160,7 +171,7 @@ void ls_dir()
 						file.currentCluster = directory->FirstCluster;
 						file.eof            = 0;
 						file.fileLength     = directory->FileSize;
-					    read_file(file);
+					    read_file(file);					    
 					}
     	 directory++;
 	}

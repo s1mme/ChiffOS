@@ -37,7 +37,7 @@ u32 pagefault_handler(u32 esp)
 		kprint("User-mode ");
    if(reserved)
 		kprint("Reserved ");
-   kprint("faulting adress @: %x\n", faulting_address);
+   kprint("faulting adress: %x\n", faulting_address);
    for(;;);
    return 0 ;
 }
@@ -145,8 +145,7 @@ void _vmmngr_initialize(struct multiboot *mbp)
 		i += 0x1000; 
 	}
 	 i = 0;
-	 
-	  for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
+   for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
       _vmm_get_page_addr(i, 1, pkdirectory);
 	 
    for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)

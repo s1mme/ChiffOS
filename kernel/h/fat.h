@@ -53,6 +53,8 @@ typedef struct _DIRECTORY {
 	u32  FileSize;            
 
 }__attribute__((packed));
+
+
 typedef struct _DIRECTORY DIRECTORY;
 typedef struct _BOOT_SECTOR BOOTSECTOR_t;
 typedef struct _MOUNT_INFO {
@@ -81,3 +83,4 @@ typedef struct _FILE {
 }__attribute__((packed));
 typedef struct _FILE FILE;
 void mount_fat32();
+void FAT_testing();
