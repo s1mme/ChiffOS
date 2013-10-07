@@ -5,6 +5,7 @@
 #include <irq.h>
 #include <isr.h>
 #include <proc.h>
+#include <v86mon.h>
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -155,7 +156,26 @@ const char *exception_messages[] =
 u32 isr_handler(u32 esp)
 {
 	struct regs *r = (struct regs*)esp;
-
+	
+	u32 (*handler)(struct regs *r); 
+	
+	handler = irq_routines[r->int_no];	
+	if(handler)
+		handler(r);
+	
+	if (r->eflags & 0x20000) 
+    {
+        if (vm86_opcode_handler(r))
+        {
+			/*kprint("everything is good!");*/
+		}
+		else
+        {         
+            kprint("v86: opcode error!\n");
+        }
+	}
+	else
+	{	
 	if(r->int_no < 32)
 	{
 		kprint("Received interrupt: %d (%s)\n", r->int_no, exception_messages[r->int_no]);
@@ -164,14 +184,12 @@ u32 isr_handler(u32 esp)
 		kprint("CS =%x EIP=%x EFLAGS=%x USERESP=%x\n", r->cs, r->eip, r->eflags, r->useresp);
 		kprint("INT=%02dd ERR_CODE=0x%x DS=%x\n", r->int_no, r->err_code, r->ds);
 		kprint("\n");
+		
 		for(;;);
 			
 	}
-	u32 (*handler)(struct regs *r); 
+}
 	
-	handler = irq_routines[r->int_no];	
-	if(handler)
-		handler(r);
 	return esp;
 	
 }

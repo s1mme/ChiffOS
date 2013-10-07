@@ -3,7 +3,7 @@
 #include <video.h>
 #include <kutils.h>
 #include <proc.h>
-volatile u32 timerticks = 0;
+ u32 timerticks = 0;
 	
 u32 uptime()
 {
@@ -52,5 +52,6 @@ int sleep(u32 ms) {
     if (t == 0)t = 1;
 	u32 start_ticks = gettickcount();
 	while(start_ticks = gettickcount() < start_ticks + t) {}
+	
 	return start_ticks;
 }

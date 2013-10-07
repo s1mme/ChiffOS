@@ -4,9 +4,13 @@
 #include <kutils.h>
 #include <proc.h>
 #include <sched.h>
+#include <vesa.h>
+#include <timer.h>
 volatile task_t *current_task;
 volatile task_t *ready_queue;
 volatile bool task_switching = true;
+extern uintptr_t vesa_com_start;
+extern uintptr_t vesa_com_end;
 const u16 TIMER_HZ = 100;
 void exit();
 u32 counter = 0;
@@ -35,7 +39,7 @@ void _task_initialize(void)
 	__asm__ __volatile__("sti");
 }
 
-void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u8 privilege, int priority)
+void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u8 privilege, int priority,task_type type)
 {
 	__asm__ __volatile__("cli");
 	task_switching = false;
@@ -44,7 +48,7 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	regs_t *kernel_stack = (regs_t*)kmalloc(sizeof(regs_t)+KERNEL_STACK_SIZE);
     
 	new_task->state = TASK_RUNNING;
- 
+	
     task_t *tmp_task = (task_t*)ready_queue;
 	while(tmp_task->next)
 	{
@@ -52,20 +56,30 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	}
 	tmp_task->next = new_task;
 	new_task->privilege = privilege;
-
+	new_task->type = type;
     u32 code_segment = 0x08, data_segment = 0x10;
+    u32 eflags = 0x0202;
     kernel_stack->ss = data_segment;
-    if (new_task->privilege == 3)
+    if (new_task->privilege == 3 && new_task->type == THREAD)
         {         
            kernel_stack->ss = 0x23; 
            code_segment = 0x1B; 
         }
-    if (new_task->privilege == 3)    
-	kernel_stack->useresp = KERNEL_STACK_SIZE; 
+    if (new_task->privilege == 3 && new_task->type == THREAD)    
+		kernel_stack->useresp = KERNEL_STACK_SIZE; 
 	else
-	kernel_stack->useresp =(u32)&exit;
+		kernel_stack->useresp =(u32)&exit;
 	
-	kernel_stack->eflags = 0x0202;
+	if(new_task->privilege == 3 && new_task->type == VM86)
+		{
+	     code_segment = 0;
+	     kernel_stack->ss = 0x23;
+	
+		 kernel_stack->useresp = KERNEL_STACK_SIZE;
+		 eflags = 0x20202;
+		}	
+		
+	kernel_stack->eflags = eflags;
 	kernel_stack->cs = code_segment;
 	kernel_stack->eip = (u32)entry;
 	kernel_stack->err_code = 0;
@@ -126,21 +140,24 @@ u32 _task_switch(u32 esp)
 	return current_task->esp;
 }
 
-void create_v86_task()
+void create_v86_task(void (*thread)())
 {
+	task_t* new_task = kmalloc(sizeof(task_t));
 	
+	_get_task_stack(new_task,thread,0,0,3,PRIO_HIGH,VM86);	
+   
 }
 
 void create_user_task(void (*thread)())
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,thread,0,0,3,PRIO_LOW);
+	_get_task_stack(new_task,thread,0,0,3,PRIO_LOW,THREAD);
 }
 
 void create_kernel_task(void (*thread)(),int priority)
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,thread,0,0,0,priority);
+	_get_task_stack(new_task,thread,0,0,0,priority,THREAD);
 }
 
 void create_process()
@@ -190,17 +207,32 @@ void task3()
 	kprint("Hello! from user task! %d\n", getpid());
 	for(;;);
 }
-
-void task2()
+VESA_MODE_INFO mib;
+#define COM_ENTRY (void*)0x100
+#define VESA_MODE 282
+void vesa_task()
 {
-	for(;;);
+	/*VESA with v86 task! */
+	*(u16*)0x3600 = VESA_MODE;
+	memcpy(COM_ENTRY, &vesa_com_start, (u32)&vesa_com_end - (u32)&vesa_com_start);
+	create_v86_task((void*)0x11D);
+	sleep(1000);
+	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
+	
+	kprint("PhysBasePtr: %x\n",mib.PhysBasePtr);
+	
+	kprint("XResolution: %d pixels \n",mib.XResolution);
+	kprint("XResolution: %d pixels \n",mib.YResolution);
+	kprint("BitsPerPixel: %d\n", mib.BitsPerPixel);
+	kprint("WinSize %d\n", mib.WinSize);
+	
 }
-
 
 int IdleTask(void)
 {
 	while(1)
 	{
+		
 		if(getpid() == 4)
 		 sleep_task(25);
 		
@@ -215,11 +247,11 @@ int IdleTask(void)
 }
 void TASK_testing()
 {
-	create_user_task(task3);
-	create_user_task(task3);
-	create_kernel_task(task1,PRIO_IDLE);
-	
+	vesa_task();
+	create_kernel_task(task1,PRIO_HIGH);
+	create_kernel_task(task3,PRIO_HIGH);
+	/*
 	create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	
-	create_kernel_task(IdleTask,PRIO_HIGH);	
+	create_kernel_task(IdleTask,PRIO_HIGH);	*/
 }

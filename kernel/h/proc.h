@@ -37,4 +37,5 @@ extern volatile bool task_switching;
 extern volatile task_t *current_task;
 extern volatile task_t *ready_queue;
 void _task_initialize();
+void exit();
 #endif
