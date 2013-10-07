@@ -41,7 +41,7 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	task_switching = false;
 	memset(new_task, 0, sizeof(task_t));
 	new_task->kernel_stack = kmalloc(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
-	regs_t *kernel_stack = (regs_t*)kmalloc(sizeof(regs_t)+KERNEL_STACK_SIZE);
+	regs_t *kernel_stack = (regs_t*)kmalloc(sizeof(regs_t));
     
 	new_task->state = TASK_RUNNING;
  
@@ -52,19 +52,14 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	}
 	tmp_task->next = new_task;
 	new_task->privilege = privilege;
-
     u32 code_segment = 0x08, data_segment = 0x10;
-    kernel_stack->ss = data_segment;
+    
     if (new_task->privilege == 3)
         {         
            kernel_stack->ss = 0x23; 
            code_segment = 0x1B; 
         }
-    if (new_task->privilege == 3)    
-	kernel_stack->useresp = KERNEL_STACK_SIZE; 
-	else
-	kernel_stack->useresp =(u32)&exit;
-	
+	kernel_stack->useresp =  (u32)&exit;
 	kernel_stack->eflags = 0x0202;
 	kernel_stack->cs = code_segment;
 	kernel_stack->eip = (u32)entry;
@@ -180,15 +175,15 @@ void sleep_task(u32 milliseconds)
 }
 
 void task1()
-{			
-	kprint("Hello! from kernel task!\n");	
-	for(;;);
+{	
+			
+	kprint("This is a test task!\n");	
 }
 
-void task3()
+int task3()
 {	
-	kprint("Hello! from user task! %d\n", getpid());
-	for(;;);
+
+	return 0;
 }
 
 void task2()
@@ -201,14 +196,14 @@ int IdleTask(void)
 {
 	while(1)
 	{
-		if(getpid() == 4)
-		 sleep_task(25);
+		if(getpid() == 1)
+		 sleep_task(100);
 		
-		if(getpid() == 5)
-		 sleep_task(1000);
+		if(getpid() == 2)
+		 sleep_task(4000);
 		 
-		if(getpid() == 6)
-		 sleep_task(500);
+		if(getpid() == 3)
+		 sleep_task(1000);
 		kprint("PID NUMBER FOR TASK %d\n", getpid());     
 	}
 	return 0;
@@ -216,10 +211,14 @@ int IdleTask(void)
 void TASK_testing()
 {
 	create_user_task(task3);
-	create_user_task(task3);
-	create_kernel_task(task1,PRIO_IDLE);
-	
-	create_kernel_task(IdleTask,PRIO_IDLE);	
+
+
+	/*create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	
-	create_kernel_task(IdleTask,PRIO_HIGH);	
+	create_kernel_task(IdleTask,PRIO_HIGH);
+	*/
+	/*create_kernel_task(task1,PRIO_IDLE);	
+	create_kernel_task(task2,PRIO_LOW);	*/
+	
+	
 }

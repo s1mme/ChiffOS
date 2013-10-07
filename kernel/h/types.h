@@ -24,7 +24,7 @@ struct regs
     unsigned int gs, fs, es, ds;      
     unsigned int  edi, esi, ebp, ebx, edx, ecx, eax;  
     unsigned int int_no, err_code;    
-    unsigned int eip, cs, eflags, useresp; /*,ss*/   
+    unsigned int eip, cs, eflags, useresp,ss;  
 }__attribute__((packed));
 
 typedef struct regs regs_t;
