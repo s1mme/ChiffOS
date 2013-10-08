@@ -41,10 +41,11 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  
 	 /* write_disc_sector();*/ 
 	  /*read_disc_sector(1);*/
-	  mount_fat32();
-	  FAT_testing();
 	  _task_initialize();
 	  TASK_testing();
+	  mount_fat32();
+	  FAT_testing();	  
+	  
 	  while(1)
 	  {
 		  kputch(getchar());

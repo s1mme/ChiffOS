@@ -5,6 +5,7 @@
 #include <proc.h>
 #include <sched.h>
 #include <vesa.h>
+#include <elf.h>
 #include <timer.h>
 volatile task_t *current_task;
 volatile task_t *ready_queue;
@@ -41,6 +42,7 @@ void _task_initialize(void)
 
 void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u8 privilege, int priority,task_type type)
 {
+	
 	__asm__ __volatile__("cli");
 	task_switching = false;
 	memset(new_task, 0, sizeof(task_t));
@@ -160,9 +162,10 @@ void create_kernel_task(void (*thread)(),int priority)
 	_get_task_stack(new_task,thread,0,0,0,priority,THREAD);
 }
 
-void create_process()
+void create_process(void (*process)(),int priority,int argc, char** argv)
 {
-	
+	task_t* new_task = kmalloc(sizeof(task_t));
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,0,priority,THREAD);		 
 }
 
 void exit()
@@ -215,7 +218,7 @@ void vesa_task()
 	/*VESA with v86 task! */
 	*(u16*)0x3600 = VESA_MODE;
 	memcpy(COM_ENTRY, &vesa_com_start, (u32)&vesa_com_end - (u32)&vesa_com_start);
-	create_v86_task((void*)0x11D);
+	create_v86_task((void*)0x11D);	/*0x100 to switch to graphics mode*/
 	sleep(1000);
 	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
 	
@@ -247,9 +250,10 @@ int IdleTask(void)
 }
 void TASK_testing()
 {
-	vesa_task();
-	create_kernel_task(task1,PRIO_HIGH);
-	create_kernel_task(task3,PRIO_HIGH);
+	 
+/*	vesa_task();*/
+	/*create_kernel_task(task1,PRIO_HIGH);
+	create_kernel_task(task3,PRIO_HIGH);*/
 	/*
 	create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	

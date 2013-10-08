@@ -8,6 +8,7 @@
 #include <heapmngr.h>
 #define DESCSIZE 32
 #define PAGE_SIZE 0x1000
+#define ELF_START 0x1400000
  heap_t *heap; 
 u32 p_kmalloc(u32 size, u32 align, u32 *phys);
 u32 *frames;
@@ -15,6 +16,19 @@ u32 num_pages;
 extern u32 end;
 u32 placement_address = (u32)&end;
 struct p_directory *pkdirectory;
+ 
+u32 paging_getPhysAddr(void* virtAddress)
+{
+    struct p_directory* pd = pkdirectory;
+
+
+    u32 pagenr = (u32)virtAddress / 0x1000;
+    struct p_tables* pt = pd->tables[pagenr/1024];
+
+    return ((u32)&pt->pages[pagenr%1024]&0xFFFF000) + (((u32)virtAddress)&0x00000FFF);
+}
+
+ 
  
 u32 pagefault_handler(u32 esp)
 {
@@ -129,22 +143,26 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	u32 total_size = mbp->mem_upper * 1024;
 	num_pages = total_size / 0x1000;
 	kprint("[INFO] amount of frames: %d\n",num_pages);
-	frames = (u32*)p_kmalloc(num_pages/DESCSIZE,0,NULL);
+	frames = (u32*)p_kmalloc(num_pages/DESCSIZE,1,NULL);
 	memset(frames, 0, num_pages/DESCSIZE);
 	
 	
 	pkdirectory = (struct p_directory*)p_kmalloc(sizeof(struct p_directory),1,NULL);
 	memset(pkdirectory,0,sizeof(struct p_directory));
-	
-	kprint("[INFO] placement_address: %x\n", placement_address);
-	
 	u32 i = 0;
-	while(i < placement_address+0x6000000)
+	kprint("[INFO] placement_address: %x\n", placement_address);
+	 
+	
+	
+	
+	while(i < placement_address)
 	 {
 		_vmmngr_alloc_frame(_vmm_get_page_addr(i,1,pkdirectory),0,1);
 		i += 0x1000; 
 	}
 	 i = 0;
+	 
+	 
    for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
       _vmm_get_page_addr(i, 1, pkdirectory);
 	 
@@ -161,6 +179,8 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	
 	
 	register_device(14, pagefault_handler);
+	kprint("%x",pkdirectory);
+	
 	_vmmngr_switch_directory(pkdirectory);
 	heap = _heapmngr_initialize(KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, HEAP_INDEX_SIZE);
 }

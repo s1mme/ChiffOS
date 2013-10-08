@@ -23,10 +23,12 @@ struct p_directory
 {
 	struct p_tables *tables[1024];
 	u32 tablephysical[1024];
+	u32 phys_addr;
 }__attribute__((packed));
 
 void _vmmngr_alloc_frame(struct p_pages *page, int is_kernel, int is_writeable);
 struct p_pages *_vmm_get_page_addr(u32 addr, u32 make, struct p_directory *dir);
 u32 p_kmalloc(u32 size, u32 align, u32 *phys);
-
+extern struct p_directory *pkdirectory;
+u32 paging_getPhysAddr(void* virtAddress);
 #endif

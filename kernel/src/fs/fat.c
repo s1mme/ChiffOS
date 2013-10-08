@@ -4,6 +4,7 @@
 #include <heapmngr.h>
 #include <kutils.h>
 #include <ata.h>
+#include <elf.h>
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
@@ -50,11 +51,11 @@ void FAT_testing()
 	FILE file;
 	file_meta_data[32] = 'W';
 
-	write_file(file,file_meta_data,1);
+	/*write_file(file,file_meta_data,1);*/
 	u8 *filename = ls_dir();
-	file = parse_dir(filename);
+	file = parse_dir("CAT        ");
 		
-	write_file(file,"hello how are you?",2);
+	/*write_file(file,"hello how are you?",2);*/
 	read_file(file);	
 }
 
@@ -103,7 +104,7 @@ FILE parse_dir( char* DirectoryName)
 	return file;
 }
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*8
+#define CLUSTER_SIZE 512*22
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
@@ -114,12 +115,16 @@ u32 sector_count = file.fileLength/SECTOR_SIZE;
 u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 
+if (!parse_elf(FAT_table, file.fileLength))
+	kprint("\nCannot start program!\n");  
+	               
+/*
 int i;
 for(i = 0; i < file.fileLength; i++)
 	{	
 		if(!file.eof)
 			kputch(FAT_table[i]);
-	}
+	}*/
 }
 
 void write_file(FILE file , char *buf, u8 method)
