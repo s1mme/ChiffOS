@@ -57,7 +57,7 @@ void scan_pci_bus(int BusNum)
 	PCI_table *pci_info;
 	int nDev, nFnc;
 	u32 nVendorID;
-	set_term_color(180);
+	set_term_color(80);
 	kprint("PCI: Scanning Bus %d\n", BusNum );
 	for ( nDev = 0; nDev < 8; nDev++ )
 	{
@@ -86,6 +86,9 @@ void scan_pci_bus(int BusNum)
 			}
 		}
 	}
-	set_term_color(180);
+	set_term_color(80);
+
 	kprint("PCI: Scanning ended!");
+	set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));
 }
+

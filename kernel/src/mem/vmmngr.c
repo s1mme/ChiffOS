@@ -27,7 +27,22 @@ u32 paging_getPhysAddr(void* virtAddress)
 
     return ((u32)&pt->pages[pagenr%1024]&0xFFFF000) + (((u32)virtAddress)&0x00000FFF);
 }
+#define MEM_START (u8*)0x0a0000000
+void* paging_getVirtaddr(u32 physAddress, u32 numPages)
+{
+	u32 i;
+    static u8* virtAddress = MEM_START; 
+    for (i=0; i<numPages; i++)
+    {
+        u32 pagenr = (u32)virtAddress/0x1000;
 
+        pkdirectory->tables[pagenr/1024]->pages[pagenr%1024] = physAddress | 1 | 2;
+
+        virtAddress += 0x1000;
+        physAddress += 0x1000;
+    }
+    return (void*)0xa0000000; 
+}
  
  
 u32 pagefault_handler(u32 esp)
@@ -81,14 +96,14 @@ struct p_pages *_vmm_get_page_addr(u32 addr, u32 make, struct p_directory *dir)
 	addr /= 0x1000;
 	u32 table_index = addr / 1024;
 	if(dir->tables[table_index])
-		return (struct p_pages*)&dir->tables[table_index]->pages[addr%1024];
+		return (u32*)&dir->tables[table_index]->pages[addr%1024];
 	else if(make)
 		{
 			u32 tmp;
 			dir->tables[table_index] = (struct p_tables*)p_kmalloc(sizeof(struct p_tables),1,&tmp);
 			memset(dir->tables[table_index], 0 , 0x1000);
 			dir->tablephysical[table_index]  = tmp | 0x7;
-			return (struct p_pages*)&dir->tables[table_index]->pages[addr%1024];			
+			return (u32*)&dir->tables[table_index]->pages[addr%1024];			
 		}
 	else
 		return 0;
@@ -126,7 +141,10 @@ u32 p_kmalloc(u32 size, u32 align, u32 *phys)
 	placement_address += size;
 	return tmp;
 }
-
+#define VESA_START 0xa0000000
+#define VESA_END 0xa1600000
+#define FAT_START 0x10b000
+#define FAT_END 0x40b0000
 void _vmmngr_switch_directory(struct p_directory *dir)
 {
    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tablephysical));
@@ -153,35 +171,33 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	kprint("[INFO] placement_address: %x\n", placement_address);
 	 
 	
-	
-	
 	while(i < placement_address)
 	 {
 		_vmmngr_alloc_frame(_vmm_get_page_addr(i,1,pkdirectory),0,1);
 		i += 0x1000; 
-	}
-	 i = 0;
+	 }
+	i = 0;
+	for (i = VESA_START; i < VESA_END; i += 0x1000)
+		_vmm_get_page_addr(i, 1, pkdirectory);
 	 
+	for (i = FAT_START; i < FAT_START+FAT_END; i += 0x1000)
+		_vmm_get_page_addr(i, 1, pkdirectory);
 	 
-   for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
-      _vmm_get_page_addr(i, 1, pkdirectory);
-	 
-   for (i = 0x10b000; i < 0x10b000+0x40b0000; i += 0x1000)
-       _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
+	for (i = FAT_START; i < FAT_START+FAT_END; i += 0x1000)
+		_vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
+	       
 	
+	for (i = VESA_START; i < VESA_END; i += 0x1000)
+		_vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
 	 
-   for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
-       _vmm_get_page_addr(i, 1, pkdirectory);
+    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
+		_vmm_get_page_addr(i, 1, pkdirectory);
 
-   for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
+    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
        _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
-	
-	
-	
+
 	register_device(14, pagefault_handler);
-	kprint("%x",pkdirectory);
 	
 	_vmmngr_switch_directory(pkdirectory);
 	heap = _heapmngr_initialize(KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, HEAP_INDEX_SIZE);
 }
-

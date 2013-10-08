@@ -42,6 +42,7 @@ void kmain(struct multiboot *mbp, u32 magic)
 	 /* write_disc_sector();*/ 
 	  /*read_disc_sector(1);*/
 	  _task_initialize();
+	
 	  TASK_testing();
 	  mount_fat32();
 	  FAT_testing();	  

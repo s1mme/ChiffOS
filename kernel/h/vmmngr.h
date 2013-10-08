@@ -16,7 +16,7 @@ struct p_pages
 
 struct p_tables
 {
-	struct p_pages pages[1024];
+	u32 pages[1024];
 }__attribute__((packed));
 
 struct p_directory
@@ -31,4 +31,5 @@ struct p_pages *_vmm_get_page_addr(u32 addr, u32 make, struct p_directory *dir);
 u32 p_kmalloc(u32 size, u32 align, u32 *phys);
 extern struct p_directory *pkdirectory;
 u32 paging_getPhysAddr(void* virtAddress);
+void* paging_getVirtaddr(u32 physAddress, u32 numPages);
 #endif

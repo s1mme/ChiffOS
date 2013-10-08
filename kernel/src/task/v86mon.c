@@ -192,7 +192,7 @@ case 0xEE: /* OUT DX, AL */
 
        case 0xF4: /* HLT */
 			
-            /*exit();*/
+            exit();
             return true; 
 
         default: 

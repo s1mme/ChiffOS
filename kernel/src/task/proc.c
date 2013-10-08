@@ -9,6 +9,7 @@
 #include <timer.h>
 volatile task_t *current_task;
 volatile task_t *ready_queue;
+
 volatile bool task_switching = true;
 extern uintptr_t vesa_com_start;
 extern uintptr_t vesa_com_end;
@@ -210,32 +211,37 @@ void task3()
 	kprint("Hello! from user task! %d\n", getpid());
 	for(;;);
 }
+
 VESA_MODE_INFO mib;
 #define COM_ENTRY (void*)0x100
-#define VESA_MODE 282
+#define VESA_MODE 279
 void vesa_task()
 {
 	/*VESA with v86 task! */
 	*(u16*)0x3600 = VESA_MODE;
 	memcpy(COM_ENTRY, &vesa_com_start, (u32)&vesa_com_end - (u32)&vesa_com_start);
-	create_v86_task((void*)0x11D);	/*0x100 to switch to graphics mode*/
-	sleep(1000);
-	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
+	create_v86_task((void*)0x100);
 	
+	create_v86_task((void*)0x11d);
+	sleep(1200);
+	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
+#ifdef DEBUGGING	
 	kprint("PhysBasePtr: %x\n",mib.PhysBasePtr);
 	
 	kprint("XResolution: %d pixels \n",mib.XResolution);
 	kprint("XResolution: %d pixels \n",mib.YResolution);
 	kprint("BitsPerPixel: %d\n", mib.BitsPerPixel);
 	kprint("WinSize %d\n", mib.WinSize);
-	
+#endif
+
+	u16 *surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
+	memset(surface, 200, mib.XResolution*mib.YResolution*2);
 }
 
 int IdleTask(void)
 {
 	while(1)
-	{
-		
+	{		
 		if(getpid() == 4)
 		 sleep_task(25);
 		
@@ -248,10 +254,10 @@ int IdleTask(void)
 	}
 	return 0;
 }
+
 void TASK_testing()
-{
-	 
-/*	vesa_task();*/
+{	 
+	/*vesa_task();*/
 	/*create_kernel_task(task1,PRIO_HIGH);
 	create_kernel_task(task3,PRIO_HIGH);*/
 	/*

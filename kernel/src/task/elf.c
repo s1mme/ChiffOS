@@ -26,7 +26,7 @@ bool parse_elf(void *elf_program_buf,u32 elf_file_size)
     int i;
       	 
 	for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
-    _vmm_get_page_addr(i, 1, pd);
+		_vmm_get_page_addr(i, 1, pd);
 	 
     for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
        _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pd), 0, 1);
