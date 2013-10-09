@@ -166,7 +166,7 @@ void create_kernel_task(void (*thread)(),int priority)
 void create_process(void (*process)(),int priority,int argc, char** argv)
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,process,argc,(uintptr_t)argv,0,priority,THREAD);		 
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,THREAD);		 
 }
 
 void exit()

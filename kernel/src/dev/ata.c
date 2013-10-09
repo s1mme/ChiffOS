@@ -111,13 +111,14 @@ count++;
 }	
    for (i = 0; i < 4; i++)
      {
-         kprint(" Found %s Drive %dMB - %s Drive: %d Channel %d\n",
+         kprint(" Found %s Drive %dMB - %s\n Drive: %d Channel %d",
             (const char *[]){"ATA", "ATAPI"}[ide_devices[i].Type], /* Type */
             ide_devices[i].Size / 1024 , /* Size */
             ide_devices[i].Model,
             ide_devices[i].Drive,
             ide_devices[i].Channel);	
 }
+kprint("\n");
 ide_cntrl_write_reg(ATA_PRIMARY, ATA_REG_CONTROL, 0);
 ide_cntrl_write_reg(ATA_SECONDARY, ATA_REG_CONTROL, 0);
 }

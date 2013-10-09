@@ -53,7 +53,7 @@ void FAT_testing()
 
 	/*write_file(file,file_meta_data,1);*/
 	u8 *filename = ls_dir();
-	file = parse_dir("CAT        ");
+	file = parse_dir("TEST       ");
 		
 	/*write_file(file,"hello how are you?",2);*/
 	read_file(file);	
@@ -104,7 +104,7 @@ FILE parse_dir( char* DirectoryName)
 	return file;
 }
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*22
+#define CLUSTER_SIZE 512*25
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];

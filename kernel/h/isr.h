@@ -33,6 +33,7 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 extern void isr32();
+extern void isr128();
 extern void isrs_install();
 
 #endif

@@ -110,7 +110,7 @@ void isrs_install()
     idt_set_gate(29, (unsigned)isr29, 0x08, 0x8E);
     idt_set_gate(30, (unsigned)isr30, 0x08, 0x8E);
     idt_set_gate(31, (unsigned)isr31, 0x08, 0x8E);
- /*   idt_set_gate(128, (unsigned)isr32, 0x08, 0xee); */
+    idt_set_gate(128, (unsigned)isr128, 0x08, 0xee); 
 }
  
 
@@ -182,14 +182,13 @@ u32 isr_handler(u32 esp)
 		kprint("EAX=%x EBX=%x ECX=%x EDX=%x\n", r->eax, r->ebx, r->ecx, r->edx);
 		kprint("ESI=%x EDI=%x EBP=%x\n", r->esi, r->edi, r->ebp);
 		kprint("CS =%x EIP=%x EFLAGS=%x USERESP=%x\n", r->cs, r->eip, r->eflags, r->useresp);
-		kprint("INT=%02dd ERR_CODE=0x%x DS=%x\n", r->int_no, r->err_code, r->ds);
+		kprint("INT=%d ERR_CODE=%x DS=%x\n", r->int_no, r->err_code, r->ds);
 		kprint("\n");
 		
 		for(;;);
 			
 	}
 }
-	
 	return esp;
 	
 }
