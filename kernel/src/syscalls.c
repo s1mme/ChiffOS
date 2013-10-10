@@ -40,26 +40,7 @@ else {
 	}
 }
 
-int write(int file, char* buf, int length)
-{
-	FILE test;
-	if(file > 2)
-	{
-		write_file(test,buf,2);
-	}
-	int ret = 0;
- 
-	const char *p = (const char *)buf;
-	int i;
-	for ( i = 0; i < length && *p; i++) {
-	kputch(*p++);
 
-	ret++;
-}
-
-
-return ret;
-}
 
 
 
@@ -68,7 +49,8 @@ void *syscalls[3] =
 {
 	&sbrk,
 	&write,
-	&open
+	&open,
+	&read
 };
 
 void syscall_handler(regs_t *r)

@@ -90,4 +90,7 @@ void FAT_testing();
 void write_file(FILE file , char *buf, u8 method);
 int open(const char *path, int mode);
 void read_elf(FILE file );
+int write(int file, char* buf, int length);
+
+int read(int file,  u8 *buffer, u32 size);
 #endif

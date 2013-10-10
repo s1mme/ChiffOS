@@ -52,17 +52,26 @@ void mount_fat32()
 
 void FAT_testing()
 {	
-	int file = open("MUU     TXT",0);
-	kprint("%d", file);
-	read(file,0,current_task->fdtable[file].size);
-	/*FILE file;
-	file_meta_data[32] = 'W';
-
-	/*write_file(file,file_meta_data,1);*/
-	/*u8 *filename = ls_dir();
-	file = parse_dir("TEST       ");
+	int file = open("MUU     TXT",0); /* todo: fix dos names */
+	
+	int sz = read(file,0,current_task->fdtable[file].size);
+	
+	kprint("size: %d", sz);
+	
+	u8 *text = "HELLO!";
+	file = open("MUU     TXT",1);
+	kprint("file number %d", file);
+	write(file, text, strlen(text));
+	
+	file = open("MUU     TXT",0);
+	kprint("\n");
+	sz = read(file,0,current_task->fdtable[file].size);
+	kprint("\n");
+	
+	/*
+	file3 = parse_dir("TEST       ");
 		
-	/*write_file(file,"hello how are you?",2);*/
+	write_file(file3,"goat",2);
 	/*read_elf(file);	*/
 }
 
@@ -210,11 +219,14 @@ u8 *ls_dir()
 int open(const char *path, int mode) {
 	FILE node = parse_dir(path);
 	int fd =4;
+	fd++;
 	if (mode != O_RDONLY)
 	{
 	FILE file;	
-		write_file(file,file_meta_data,1); /* todo specify filename with path*/
-		/*current_task->fdtable[fd].node = FAT_table;*/
+	
+		write_file(node,file_meta_data,1); /* todo: specify filename with path*/
+		
+		current_task->fdtable[fd].node[6] = node; /* node[x] -> x = size of write message , todo: fix this !*/
 		return fd;		
 	}
 	else
@@ -229,8 +241,6 @@ int open(const char *path, int mode) {
 
 int read(int file,  u8 *buffer, u32 size)
 {
-
-	
 	if(file > 3)
 	{
 		read_file(current_task->fdtable[file].node[size]);	
@@ -238,4 +248,24 @@ int read(int file,  u8 *buffer, u32 size)
 
 	/*else 
 	stdio_read(current_task->fdtable[file].node,buffer,size);*/
+	return current_task->fdtable[file].size;
+}
+
+int write(int file, char* buf, int length)
+{
+	int ret = 0;
+	if(file > 3)
+	{
+		write_file(current_task->fdtable[file].node[length],buf,2);
+	}
+	else
+	{
+		const char *p = (const char *)buf;
+		int i;
+		for ( i = 0; i < length && *p; i++) {
+			kputch(*p++);
+	}
+	ret++;
+	}
+return ret;
 }
