@@ -5,11 +5,15 @@
 #include <kutils.h>
 #include <ata.h>
 #include <elf.h>
+#include <proc.h>
+#include <fat.h>
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
-void read_file(FILE file);
-void write_file(FILE file,char *buf, u8 method );
+
+int read_file(FILE file);
+
+
 u8 *ls_dir();
 FILE parse_dir( char* DirectoryName);
 
@@ -48,15 +52,18 @@ void mount_fat32()
 
 void FAT_testing()
 {	
-	FILE file;
+	int file = open("MUU     TXT",0);
+	kprint("%d", file);
+	read(file,0,current_task->fdtable[file].size);
+	/*FILE file;
 	file_meta_data[32] = 'W';
 
 	/*write_file(file,file_meta_data,1);*/
-	u8 *filename = ls_dir();
+	/*u8 *filename = ls_dir();
 	file = parse_dir("TEST       ");
 		
 	/*write_file(file,"hello how are you?",2);*/
-	read_file(file);	
+	/*read_elf(file);	*/
 }
 
 #define FS_FILE       0
@@ -104,11 +111,11 @@ FILE parse_dir( char* DirectoryName)
 	return file;
 }
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*25
+#define CLUSTER_SIZE 512*90
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
-void read_file(FILE file )
+void read_elf(FILE file )
 {
 
 u32 sector_count = file.fileLength/SECTOR_SIZE;
@@ -125,6 +132,21 @@ for(i = 0; i < file.fileLength; i++)
 		if(!file.eof)
 			kputch(FAT_table[i]);
 	}*/
+}
+
+int read_file(FILE file )
+{
+	u32 sector_count = file.fileLength/SECTOR_SIZE;
+	u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
+	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
+	
+	int i;
+for(i = 0; i < file.fileLength; i++)
+	{	
+		if(!file.eof)
+			kputch(FAT_table[i]);
+	}
+	return file.fileLength;
 }
 
 void write_file(FILE file , char *buf, u8 method)
@@ -180,4 +202,40 @@ u8 *ls_dir()
 					}
     	 directory++;
 	}
+}
+
+
+#define O_RDONLY 0
+
+int open(const char *path, int mode) {
+	FILE node = parse_dir(path);
+	int fd =4;
+	if (mode != O_RDONLY)
+	{
+	FILE file;	
+		write_file(file,file_meta_data,1); /* todo specify filename with path*/
+		/*current_task->fdtable[fd].node = FAT_table;*/
+		return fd;		
+	}
+	else
+	{	
+		current_task->fdtable[fd].node[node.fileLength] = node;
+		current_task->fdtable[fd].size = node.fileLength;
+		return fd;
+		/* read file */
+	}
+}
+
+
+int read(int file,  u8 *buffer, u32 size)
+{
+
+	
+	if(file > 3)
+	{
+		read_file(current_task->fdtable[file].node[size]);	
+	}
+
+	/*else 
+	stdio_read(current_task->fdtable[file].node,buffer,size);*/
 }

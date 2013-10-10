@@ -1,3 +1,5 @@
+#ifndef FAT_H_
+#define FAT_H_
 #include <types.h>
 
 
@@ -82,5 +84,10 @@ typedef struct _FILE {
 
 }__attribute__((packed));
 typedef struct _FILE FILE;
+
 void mount_fat32();
 void FAT_testing();
+void write_file(FILE file , char *buf, u8 method);
+int open(const char *path, int mode);
+void read_elf(FILE file );
+#endif

@@ -2,17 +2,35 @@
 #define PROC_H_
 
 #include <types.h>
+#include <fat.h>
 typedef enum 
 {
 	THREAD, VM86
 	
 }task_type;
+
+
 #define PRIO_DEAD 99
 #define PRIO_IDLE 0
 #define PRIO_LOW 1
 #define PRIO_HIGH 2
+#define CLUSTER_SIZE 512
+
+typedef struct open_file {
+	int count;
+	u16 dev;
+	u32  ino;
+	u32  _cur_ino; 
+	u32 offset;
+	u32 size;
+	FILE node[CLUSTER_SIZE];
+	void *data; 
+} open_file_t;
+
+#define OPEN_MAX 16
 struct task
 {
+	open_file_t fdtable[OPEN_MAX];
     int priority;
     /*page_directory_t* directory;*/
     u32 time_to_run;       /* Time left on quanta*/

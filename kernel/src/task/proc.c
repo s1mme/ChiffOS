@@ -6,6 +6,7 @@
 #include <sched.h>
 #include <vesa.h>
 #include <elf.h>
+#include <fat.h>
 #include <timer.h>
 volatile task_t *current_task;
 volatile task_t *ready_queue;

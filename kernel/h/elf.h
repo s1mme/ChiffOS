@@ -33,4 +33,5 @@ typedef struct
 } program_header_t;
 bool parse_elf(void *elf_program_buf,u32 elf_file_size);
 extern const elf_header_t * elf_header;
+extern struct p_directory *pd;
 #endif

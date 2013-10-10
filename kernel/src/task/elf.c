@@ -6,8 +6,8 @@
 #include <heapmngr.h>
 #include <proc.h>
 struct p_directory* pd = 0;
-#define ELF_START 0x1400
-#define ELF_END 0x1900000
+#define ELF_START 0x1400000
+#define ELF_END 0x9900000
 const elf_header_t * elf_header;
 bool parse_elf(void *elf_program_buf,u32 elf_file_size)
 {
