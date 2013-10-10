@@ -46,9 +46,9 @@ void *memset(void *dest,int val,size_t n) {
   return dest;
 }
 
-size_t strlen(const char* str)
+int strlen( char* str)
 {
-	size_t ret = 0;
+	int ret = 0;
 	while ( str[ret] != 0 )
 		ret++;
 	return ret;

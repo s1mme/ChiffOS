@@ -19,15 +19,12 @@ FILE parse_dir( char* DirectoryName);
 
 char file_meta_data[] =
 {
+
  0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
  0x74, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 
  0x4d, 0x55, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x58, 0x54, 0x20, 0x00, 0x00, 0x39, 0x0a,  
  0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00,
- 
- 0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
- 0x74, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 
- 0x4d, 0x55, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x58, 0x54, 0x20, 0x00, 0x00, 0x39, 0x0a,  
- 0x45, 0x43, 0x45, 0x43, 0x00, 0x00, 0x39, 0x0a,  0x45, 0x43, 0x03, 0x00, 0x1b, 0x00, 0x00, 0x00,
+
 };
 
 void mount_fat32()
@@ -52,27 +49,26 @@ void mount_fat32()
 
 void FAT_testing()
 {	
-	int file = open("MUU     TXT",0); /* todo: fix dos names */
+
+	int file = 0;
+	int sz = 0;
+	FILE elf;
+/*	elf = parse_dir("TEST       ");
 	
-	int sz = read(file,0,current_task->fdtable[file].size);
+	read_elf(elf);*/
+
+	char *text = "lets see if it works!";
+	sz = strlen(text);
 	
-	kprint("size: %d", sz);
+	file = open("chiffos TXT",1);	/* create file, 1 -> write */
+	write(file, text, 22); 			/* put text in file */
+	ls_dir();						/* list all files */
 	
-	u8 *text = "HELLO!";
-	file = open("MUU     TXT",1);
-	kprint("file number %d", file);
-	write(file, text, strlen(text));
-	
-	file = open("MUU     TXT",0);
+	int test;
+	test = open("chiffos TXT", 0);	/* open file, 0 -> read */
+	sz = read(test,0,current_task->fdtable[test].size); /* read the file */
 	kprint("\n");
-	sz = read(file,0,current_task->fdtable[file].size);
-	kprint("\n");
 	
-	/*
-	file3 = parse_dir("TEST       ");
-		
-	write_file(file3,"goat",2);
-	/*read_elf(file);	*/
 }
 
 #define FS_FILE       0
@@ -111,8 +107,9 @@ FILE parse_dir( char* DirectoryName)
 					file.flags = FS_DIRECTORY;
 					else
 					file.flags = FS_FILE;
-					return file;
 					free(directory);
+					return file;
+					
 					
 		}
     	 directory++;
@@ -193,6 +190,7 @@ u8 *ls_dir()
 					}
     	 directory++;    	 
 	}
+	free(directory);
 	/*SUBdirs and subfiles and prints out subfiles data*/
 	directory = (DIRECTORY*) &FAT_table;
 
@@ -222,14 +220,20 @@ int open(const char *path, int mode) {
 	fd++;
 	if (mode != O_RDONLY)
 	{
-	FILE file;	
-	
+		/*file_meta_data[33] = path[0];*/
+		file_meta_data[32] = path[0];
+		file_meta_data[33] = path[1];
+		file_meta_data[34] = path[2];
+		file_meta_data[35] = path[3];
+		file_meta_data[36] = path[4];
+		file_meta_data[37] = path[5];
+		file_meta_data[38] = path[6];
 		write_file(node,file_meta_data,1); /* todo: specify filename with path*/
 		
-		current_task->fdtable[fd].node[6] = node; /* node[x] -> x = size of write message , todo: fix this !*/
+		current_task->fdtable[fd].node[22] = node; /* node[x] -> x = size of write message , todo: fix this !*/
 		return fd;		
 	}
-	else
+	if(mode == 0)
 	{	
 		current_task->fdtable[fd].node[node.fileLength] = node;
 		current_task->fdtable[fd].size = node.fileLength;
@@ -241,6 +245,7 @@ int open(const char *path, int mode) {
 
 int read(int file,  u8 *buffer, u32 size)
 {
+	
 	if(file > 3)
 	{
 		read_file(current_task->fdtable[file].node[size]);	
