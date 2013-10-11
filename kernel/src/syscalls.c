@@ -42,9 +42,6 @@ else {
 
 
 
-
-
-
 void *syscalls[3] =
 {
 	&sbrk,

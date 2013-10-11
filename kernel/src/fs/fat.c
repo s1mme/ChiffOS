@@ -7,6 +7,7 @@
 #include <elf.h>
 #include <proc.h>
 #include <fat.h>
+#include <vesa.h>
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
@@ -53,22 +54,22 @@ void FAT_testing()
 	int file = 0;
 	int sz = 0;
 	FILE elf;
-/*	elf = parse_dir("TEST       ");
+	elf = parse_dir("TEST       ");
 	
-	read_elf(elf);*/
-
+	read_elf(elf);
+/*
 	char *text = "lets see if it works!";
 	sz = strlen(text);
 	
 	file = open("chiffos TXT",1);	/* create file, 1 -> write */
-	write(file, text, 22); 			/* put text in file */
-	ls_dir();						/* list all files */
+/*	write(file, text, 22); 			/* put text in file */
+/*	ls_dir();						/* list all files */
 	
-	int test;
+/*	int test;
 	test = open("chiffos TXT", 0);	/* open file, 0 -> read */
-	sz = read(test,0,current_task->fdtable[test].size); /* read the file */
-	kprint("\n");
-	
+/*	sz = read(test,0,current_task->fdtable[test].size); /* read the file */
+/*	kprint("\n");
+	*/
 }
 
 #define FS_FILE       0
@@ -117,20 +118,22 @@ FILE parse_dir( char* DirectoryName)
 	return file;
 }
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*90
+#define CLUSTER_SIZE 512*50
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
+ elf_header_t * elf_header_;
 void read_elf(FILE file )
 {
 
-u32 sector_count = file.fileLength/SECTOR_SIZE;
-u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
-read_disc_sector(sector_count,FAT_table,cluster_start_lba);
+	u32 sector_count = file.fileLength/SECTOR_SIZE;
+	u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
+	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 
-if (!parse_elf(FAT_table, file.fileLength))
-	kprint("\nCannot start program!\n");  
-	               
+	elf_header_ = parse_elf(FAT_table, file.fileLength);
+
+	create_process((void*)elf_header_->entry,0,0,0);
+          
 /*
 int i;
 for(i = 0; i < file.fileLength; i++)

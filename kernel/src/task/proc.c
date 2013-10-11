@@ -20,7 +20,7 @@ u32 counter = 0;
 u32 volatile pid = 0;
 #define TASK_RUNNING (1 << 0)
 #define TASK_SLEEPING (1 << 1)
-#define KERNEL_STACK_SIZE  8192
+#define KERNEL_STACK_SIZE  4096
 void _task_initialize(void)
 {
 	__asm__ __volatile__("cli");
@@ -63,22 +63,19 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	new_task->type = type;
     u32 code_segment = 0x08, data_segment = 0x10;
     u32 eflags = 0x0202;
+    kernel_stack->useresp =(u32)&exit;
     kernel_stack->ss = data_segment;
     if (new_task->privilege == 3 && new_task->type == THREAD)
         {         
            kernel_stack->ss = 0x23; 
+           kernel_stack->useresp = KERNEL_STACK_SIZE;
            code_segment = 0x1B; 
         }
-    if (new_task->privilege == 3 && new_task->type == THREAD)    
-		kernel_stack->useresp = KERNEL_STACK_SIZE; 
-	else
-		kernel_stack->useresp =(u32)&exit;
-	
 	if(new_task->privilege == 3 && new_task->type == VM86)
 		{
 	     code_segment = 0;
 	     kernel_stack->ss = 0x23;
-	
+
 		 kernel_stack->useresp = KERNEL_STACK_SIZE;
 		 eflags = 0x20202;
 		}	
@@ -167,7 +164,7 @@ void create_kernel_task(void (*thread)(),int priority)
 void create_process(void (*process)(),int priority,int argc, char** argv)
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,THREAD);		 
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,VM86);		 
 }
 
 void exit()
@@ -216,15 +213,16 @@ void task3()
 VESA_MODE_INFO mib;
 #define COM_ENTRY (void*)0x100
 #define VESA_MODE 279
+u16 *surface = 0;
 void vesa_task()
 {
-	/*VESA with v86 task! */
+	/*VESA with v86 task from COM file */
 	*(u16*)0x3600 = VESA_MODE;
 	memcpy(COM_ENTRY, &vesa_com_start, (u32)&vesa_com_end - (u32)&vesa_com_start);
 	create_v86_task((void*)0x100);
 	
 	create_v86_task((void*)0x11d);
-	sleep(1200);
+	sleep(1300);
 	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
 #ifdef DEBUGGING	
 	kprint("PhysBasePtr: %x\n",mib.PhysBasePtr);
@@ -235,8 +233,10 @@ void vesa_task()
 	kprint("WinSize %d\n", mib.WinSize);
 #endif
 
-	u16 *surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
+	surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
+
 	memset(surface, 200, mib.XResolution*mib.YResolution*2);
+
 }
 
 int IdleTask(void)
@@ -258,9 +258,10 @@ int IdleTask(void)
 
 void TASK_testing()
 {	 
+	
 	/*vesa_task();*/
 	/*create_kernel_task(task1,PRIO_HIGH);
-	create_kernel_task(task3,PRIO_HIGH);*/
+	create_kernel_task(task3,PRIO_HIGH);
 	/*
 	create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	

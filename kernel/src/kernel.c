@@ -18,7 +18,7 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  idt_install();
 	  isrs_install();
 	  irq_install();
-	  timer_install(100);
+	  timer_install(60);
 	  _vmmngr_initialize(mbp);
 	  _kbd_initialize();
 	  __asm__ volatile("sti");

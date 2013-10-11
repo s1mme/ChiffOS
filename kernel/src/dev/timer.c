@@ -21,12 +21,14 @@ void timer_div(int hz)
  u32 timer_handle(u32 esp)
 {
 	timerticks++;
-	/*if(current_task->time_to_run > 0) 
+	if(current_task->time_to_run > 0) 
 	{
 	current_task->time_to_run--;	
 }
-	else*/
+	else
+	{
 	task_switching = true;
+}
 	return esp;	
 }
    

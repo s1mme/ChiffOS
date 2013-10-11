@@ -6,10 +6,10 @@
 #include <heapmngr.h>
 #include <proc.h>
 struct p_directory* pd = 0;
-#define ELF_START 0x1400000
+#define ELF_START 0x1
 #define ELF_END 0x1790000
 const elf_header_t * elf_header;
-bool parse_elf(void *elf_program_buf,u32 elf_file_size)
+elf_header_t* parse_elf(void *elf_program_buf,u32 elf_file_size)
 {
 	const u8 *elf_start = elf_program_buf;
 	const u8 *elf_end = elf_start + elf_file_size;
@@ -25,12 +25,12 @@ bool parse_elf(void *elf_program_buf,u32 elf_file_size)
 	
     int i;
       	 
-	for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
+/*	for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
 		_vmm_get_page_addr(i, 1, pd);
 	 
     for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
        _vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pd), 0, 1);
-    
+  */  
     u8* header_pos = elf_start + elf_header->phoff;
    
     if (header_pos+sizeof(program_header_t) >= elf_end)
@@ -63,7 +63,9 @@ bool parse_elf(void *elf_program_buf,u32 elf_file_size)
     {*/		
     kprint("Program entry: %x\n", elf_header->entry);
     
-    create_process((void*)elf_header->entry,PRIO_IDLE,0, 0);    /*argc and argv*/    
+    /*create_process((void*)elf_header->entry,PRIO_HIGH,0, 0);  */  /*argc and argv*/ 
+	return elf_header;
+       
     /*}*/
 }
 

@@ -135,9 +135,10 @@ case 0xEE: /* OUT DX, AL */
             {
             case 0x30:
            
-                return true;
+               return false;
 
             case 0x20:
+            return false;
             case 0x21:
                 return false;
 
@@ -160,7 +161,7 @@ case 0xEE: /* OUT DX, AL */
                 ctx->cs  = ivt[2 * ip[1] + 1];
                 ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
          
-                return true;
+               return true;
             }
             break;
 
@@ -190,16 +191,17 @@ case 0xEE: /* OUT DX, AL */
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-       case 0xF4: /* HLT */
+       case 0xF5: /* HLT */
 			
             exit();
             return true; 
 
         default: 
-       
+		kprint("unhandled opcode %x", ip[0]);
             return false;
         }
     }
+
 return false;
 }
 

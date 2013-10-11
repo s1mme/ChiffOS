@@ -152,7 +152,7 @@ const char *exception_messages[] =
     "Reserved",
     "Reserved"
 };
-
+int iterator = 0;
 u32 isr_handler(u32 esp)
 {
 	struct regs *r = (struct regs*)esp;
@@ -167,10 +167,10 @@ u32 isr_handler(u32 esp)
     {
         if (vm86_opcode_handler(r))
         {
-			/*kprint("everything is good!");*/
+			/*kprint("everything is good!");*/		
 		}
 		else
-        {         
+        {       			
             kprint("v86: opcode error!\n");
         }
 	}
