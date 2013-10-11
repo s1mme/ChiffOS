@@ -1,10 +1,7 @@
-WARNINGS := -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align \
-                -Wwrite-strings -Wredundant-decls -Wnested-externs -Winline \
--Wuninitialized -Wstrict-prototypes \
--Wno-unused-parameter -Wno-cast-align -Werror
+WARNINGS := 
 
 CC = i586-pc-chiffos-gcc
-CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static
+CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static -I/home/kosmick/chiffOS/kernel/h/
 LD = i586-pc-chiffos-ld
 LDFLAGS := -T../user.ld
 
@@ -17,8 +14,14 @@ OUTNAME := $(shell basename `pwd`)
 all: $(OBJFILES)
 
 	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES)
-	@mv -f $(OUTNAME) ../../misc/
-
+	#umount /mnt/fat
+	
+	#mount /dev/loop0  /mnt/fat
+	sleep 0.1
+	#mv -f $(OUTNAME) /mnt/fat/
+	
+	
+#../../misc/
 clean:
 	-$(RM) $(wildcard $(OBJFILES) $(DEPFILES) ../misc/$(OUTNAME))
 
@@ -26,3 +29,4 @@ clean:
 
 %.o: %.c Makefile
 	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+

@@ -1,7 +1,4 @@
-WARNINGS := -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-align \
-                -Wwrite-strings -Wredundant-decls -Wnested-externs -Winline \
--Wuninitialized -Wstrict-prototypes \
--Wno-unused-parameter -Wno-cast-align -Werror
+WARNINGS := 
 
 CC = i586-pc-chiffos-gcc
 CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static
