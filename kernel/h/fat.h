@@ -1,7 +1,7 @@
 #ifndef FAT_H_
 #define FAT_H_
 #include <types.h>
-
+#include <elf.h>
 
 struct _BOOT_SECTOR{
 u8 jmp[3]; /* x86 code to jump past the following data */
@@ -89,7 +89,7 @@ void mount_fat32();
 void FAT_testing();
 void write_file(FILE file , char *buf, u8 method);
 int open(const char *path, int mode);
-void read_elf(FILE file );
+elf_header_t * read_elf(FILE file );
 int write(int file, char* buf, int length);
 
 int read(int file,  u8 *buffer, u32 size);

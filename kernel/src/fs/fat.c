@@ -8,11 +8,13 @@
 #include <proc.h>
 #include <fat.h>
 #include <vesa.h>
+#include <vmmngr.h>
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
 
-int read_file(FILE file);
+
+elf_header_t * read_elf(FILE file );
 
 
 u8 *ls_dir();
@@ -47,16 +49,46 @@ void mount_fat32()
 #endif	
 	free(bootsector);
 }
-
+u16 *surface;
+VESA_MODE_INFO mib;
+#define VESA_MODE 279
 void FAT_testing()
 {	
-
+	elf_header_t * elf_program;
 	int file = 0;
 	int sz = 0;
 	FILE elf;
-	elf = parse_dir("TEST       ");
 	
-	read_elf(elf);
+	elf = parse_dir("VESA");
+	
+	elf_program = read_elf(elf);
+	
+	*(u16*)0x3600 = VESA_MODE;
+	
+	create_process((void*)elf_program->entry,0,0,0);
+	sleep(1900);
+	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
+    
+	*(u16*)0x3600 = VESA_MODE | 0x400;
+	
+	
+    kprint("PhysBasePtr: %x\n",mib.PhysBasePtr);
+	
+	kprint("XResolution: %d pixels \n",mib.XResolution);
+	kprint("XResolution: %d pixels \n",mib.YResolution);
+	kprint("BitsPerPixel: %d\n", mib.BitsPerPixel);
+	kprint("WinSize %d\n", mib.WinSize);
+	
+	elf = parse_dir("GLOADER");
+	
+	elf_program = read_elf(elf);
+	
+	surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
+	
+	create_process((void*)elf_program->entry,0,0,0);
+	sleep(2900);
+	
+	memset(surface, 200, mib.XResolution*mib.YResolution*2);	/* put whole screen painted! */
 /*
 	char *text = "lets see if it works!";
 	sz = strlen(text);
@@ -77,6 +109,11 @@ void FAT_testing()
 #define FS_INVALID    2
 FILE parse_dir( char* DirectoryName)
 {
+	
+	char DosFileName[11];
+	ToDosFileName (DirectoryName, DosFileName, 11);
+	DosFileName[11]=0;
+
 	FILE file;
 	unsigned char buf[512];
 	directory = (DIRECTORY*)kmalloc(sizeof(directory));
@@ -88,10 +125,10 @@ FILE parse_dir( char* DirectoryName)
 
 	    for (i=0; i<128; i++) {		
     			char name[11];
-    			memcpy (name, directory->Filename, 11);
+    			memcpy (name, DosFileName, 11);
     			name[11]=0;
-						
-				if (strncmp (DirectoryName, name,11) == 0) {
+	
+				if (strncmp (DosFileName, directory->Filename,11) == 0) {
 					#ifdef DEBUGGING
 					kprint("Filename: %s\n", name);
 					kprint("FileSize: %d BYTES\n", directory->FileSize);
@@ -117,23 +154,26 @@ FILE parse_dir( char* DirectoryName)
 	}
 	return file;
 }
+
+
+
 #define SECTOR_PER_CLUSTER 8
 #define CLUSTER_SIZE 512*50
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
- elf_header_t * elf_header_;
-void read_elf(FILE file )
-{
 
+elf_header_t * elf_header_;
+
+elf_header_t * read_elf(FILE file )
+{
 	u32 sector_count = file.fileLength/SECTOR_SIZE;
 	u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 
 	elf_header_ = parse_elf(FAT_table, file.fileLength);
 
-	create_process((void*)elf_header_->entry,0,0,0);
-          
+	return elf_header_;   
 /*
 int i;
 for(i = 0; i < file.fileLength; i++)
@@ -160,14 +200,14 @@ for(i = 0; i < file.fileLength; i++)
 
 void write_file(FILE file , char *buf, u8 method)
 {
-u32 cluster_start_lba;
-if(method == 1) /*write metadata e.g create files*/
-cluster_start_lba = _MountInfo.rootOffset;
+	u32 cluster_start_lba;
+	if(method == 1) /*write metadata e.g create files*/
+		cluster_start_lba = _MountInfo.rootOffset;
 
-if(method == 2) /*write contents to that file*/
-cluster_start_lba = _MountInfo.rootOffset +(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
+	if(method == 2) /*write contents to that file*/
+	cluster_start_lba = _MountInfo.rootOffset +(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 
-write_disc_sector(cluster_start_lba,buf);
+	write_disc_sector(cluster_start_lba,buf);
 }
 
 #define NUM_FILES 8

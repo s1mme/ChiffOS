@@ -164,7 +164,8 @@ void create_kernel_task(void (*thread)(),int priority)
 void create_process(void (*process)(),int priority,int argc, char** argv)
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,VM86);		 
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,VM86);	
+		 
 }
 
 void exit()
@@ -173,7 +174,19 @@ void exit()
 	current_task->priority = PRIO_DEAD;
 	current_task->time_to_run = 0;
     current_task->ready_to_run = 0;
-
+task_t* tmp_task = (task_t*)ready_queue;
+    do
+    {
+        if(tmp_task->next == current_task)
+        {
+            tmp_task->next = current_task->next;
+        }
+        if(tmp_task->next)
+        {
+            tmp_task = tmp_task->next;
+        }
+    }
+    while (tmp_task->next);
 	delete_current_task(current_task);
   
     free((void *)((u32)current_task->kernel_stack - KERNEL_STACK_SIZE)); 
@@ -210,14 +223,13 @@ void task3()
 	for(;;);
 }
 
-VESA_MODE_INFO mib;
 #define COM_ENTRY (void*)0x100
 #define VESA_MODE 279
-u16 *surface = 0;
-void vesa_task()
+/*u16 *surface = 0;*/
+void vesa_com_task()
 {
 	/*VESA with v86 task from COM file */
-	*(u16*)0x3600 = VESA_MODE;
+	/* *(u16*)0x3600 = VESA_MODE;
 	memcpy(COM_ENTRY, &vesa_com_start, (u32)&vesa_com_end - (u32)&vesa_com_start);
 	create_v86_task((void*)0x100);
 	
@@ -236,7 +248,7 @@ void vesa_task()
 	surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
 
 	memset(surface, 200, mib.XResolution*mib.YResolution*2);
-
+*/
 }
 
 int IdleTask(void)

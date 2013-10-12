@@ -126,7 +126,7 @@ void ToDosFileName (const char* filename,
 	memset (fname, ' ', FNameLength);
 
 
-	for (i=0; i < strlen(filename)-1 && i < FNameLength; i++) {
+	for (i=0; i < strlen(filename) && i < FNameLength; i++) {
 
 		if (filename[i] == '.' || i==8 )
 			break;

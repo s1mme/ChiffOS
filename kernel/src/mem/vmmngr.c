@@ -142,7 +142,7 @@ u32 p_kmalloc(u32 size, u32 align, u32 *phys)
 	return tmp;
 }
 #define VESA_START 0xa0000000
-#define VESA_END 0xa1600000
+#define VESA_END   0xa9600000
 #define FAT_START 0x10b000
 #define FAT_END 0x40b0000
 void _vmmngr_switch_directory(struct p_directory *dir)

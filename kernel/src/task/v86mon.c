@@ -195,6 +195,10 @@ case 0xEE: /* OUT DX, AL */
 			
             exit();
             return true; 
+       case 0xF4: /* HLT */
+			
+            exit();
+            return true; 
 
         default: 
 		kprint("unhandled opcode %x", ip[0]);
