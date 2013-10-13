@@ -40,7 +40,7 @@ char volume_label[11]; /* space padded */
 
 typedef struct _DIRECTORY {
 
-	u8   Filename[8];           
+	char   Filename[8];           
 	u8   Ext[3];                
 	u8   Attrib;                
 	u8   Reserved;
@@ -73,7 +73,7 @@ typedef struct _MOUNT_INFO {
 
 typedef struct _FILE {
 
-	char        name[32];
+	char   name[8];
 	u32    flags;
 	u32    fileLength;
 	u32    id;
@@ -86,7 +86,7 @@ typedef struct _FILE {
 typedef struct _FILE FILE;
 
 void mount_fat32();
-void FAT_testing();
+void FAT_vesa();
 void write_file(FILE file , char *buf, u8 method);
 int open(const char *path, int mode);
 elf_header_t * read_elf(FILE file );

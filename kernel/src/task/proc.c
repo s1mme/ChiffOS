@@ -161,10 +161,10 @@ void create_kernel_task(void (*thread)(),int priority)
 	_get_task_stack(new_task,thread,0,0,0,priority,THREAD);
 }
 
-void create_process(void (*process)(),int priority,int argc, char** argv)
+void create_process(void (*process)(),task_type type,u8 privilege, int argc, char** argv)
 {
 	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,process,argc,(uintptr_t)argv,3,priority,VM86);	
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,privilege,PRIO_HIGH, type);	
 		 
 }
 

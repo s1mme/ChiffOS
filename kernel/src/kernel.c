@@ -11,6 +11,7 @@
 #include <kbd.h>
 #include <fat.h>
 #include <proc.h>
+
 void kmain(struct multiboot *mbp, u32 magic)
 {
 	  init_video_term();
@@ -18,7 +19,7 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  idt_install();
 	  isrs_install();
 	  irq_install();
-	  timer_install(60);
+	  timer_install(100);
 	  _vmmngr_initialize(mbp);
 	  _kbd_initialize();
 	  __asm__ volatile("sti");
@@ -44,14 +45,25 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  _task_initialize();
 					
 	  TASK_testing();
+	
 	  mount_fat32();
-	  FAT_testing();	  
-	 
-	  
-	  while(1)
+	 /* FAT_vesa();*/
+	 FAT_file_testing();
+	/*  FAT_testing_newlib();	*/  
+	 while(1)
 	  {
 		  kputch(getchar());
-	  }
+		  if(getchar() == 'b')
+		  {
+			  int i;
+			  while(i < 1000)
+			  {
+					memset(0xa0000000,i, 1024*768*2);
+					i++;
+			  }
+		 }
+	  }  
+	  
 	/*  u32 *ptr = (u32*)0x600000;
 	  u32 do_page_fault = *ptr;*/
 	  for(;;);

@@ -47,6 +47,18 @@ DEFN_SYSCALL0(cli, 0);
 DEFN_SYSCALL1(puts,1, const char *);
 
 void _install_syscall_handler();
-
+#define S_IFCHR  0020000
+struct	stat 
+{
+  /*dev_t		st_dev;
+  ino_t		st_ino;*/
+  int	st_mode;
+ /* nlink_t	st_nlink;
+  uid_t		st_uid;
+  gid_t		st_gid;
+  dev_t		st_rdev;*/
+  int		st_size;
+  int     st_blksize;
+};
 
 #endif

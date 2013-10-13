@@ -147,3 +147,8 @@ int k;
 	for (i = 0; i < 3; i++)
 		fname[8+i] = toupper (fname[8+i]);
 }
+
+void reboot()
+{
+    outb (0x64, 0xFE); /* send reboot command */
+}

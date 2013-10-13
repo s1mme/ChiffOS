@@ -9,12 +9,15 @@
 #include <fat.h>
 #include <vesa.h>
 #include <vmmngr.h>
+
+#define NUM_FILES 8
+#define NUM_entries 16
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 DIRECTORY *directory;
+DIRECTORY *lsdirectory;
 
-
-elf_header_t * read_elf(FILE file );
+elf_header_t * read_elf(FILE file);
 
 
 u8 *ls_dir();
@@ -38,7 +41,7 @@ void mount_fat32()
 	
 	_MountInfo.numSectors = bootsector->total_sectors;
 	_MountInfo.rootOffset = (bootsector->num_fats * bootsector->sectors_per_fat) + bootsector->reserved_sectors;
-#ifdef DEBUGGING	
+	
 	kprint("Sectors available: %x\n", _MountInfo.numSectors );
 	kprint("rootOffset: %d\n", _MountInfo.rootOffset);
 	kprint("Test: %x\n", (u32)&bootsector->total_sectors - (u32)bootsector);
@@ -46,18 +49,29 @@ void mount_fat32()
 	kprint("num_direntries: %d\n",bootsector->num_direntries);
 	kprint("sector per cluster %d\n", bootsector->sectors_per_cluster);
 	kprint("sectors_per_fat %d\n", bootsector->num_fats);
-#endif	
+
 	free(bootsector);
 }
 u16 *surface;
 VESA_MODE_INFO mib;
 #define VESA_MODE 279
-void FAT_testing()
-{	
+void FAT_testing_newlib()
+{
+	FILE elf;
+	elf_header_t * elf_program;
+	elf = parse_dir("test");
+	elf_program = read_elf(elf);
+	create_process((void*)elf_program->entry,THREAD,0,0,0);
+}
+
+
+void FAT_vesa()
+{
 	elf_header_t * elf_program;
 	int file = 0;
 	int sz = 0;
 	FILE elf;
+
 	
 	elf = parse_dir("VESA");
 	
@@ -65,8 +79,8 @@ void FAT_testing()
 	
 	*(u16*)0x3600 = VESA_MODE;
 	
-	create_process((void*)elf_program->entry,0,0,0);
-	sleep(1900);
+	create_process((void*)elf_program->entry,VM86,3,0,0);
+	sleep(4000);
 	memcpy(&mib, (void*)0x3600, sizeof(VESA_MODE_INFO));
     
 	*(u16*)0x3600 = VESA_MODE | 0x400;
@@ -82,26 +96,31 @@ void FAT_testing()
 	elf = parse_dir("GLOADER");
 	
 	elf_program = read_elf(elf);
-	
+	sleep(4000);
 	surface = paging_getVirtaddr(mib.PhysBasePtr, 0x400);
 	
-	create_process((void*)elf_program->entry,0,0,0);
-	sleep(2900);
+	create_process((void*)elf_program->entry,VM86,3,0,0);
+	sleep(500);
 	
-	memset(surface, 200, mib.XResolution*mib.YResolution*2);	/* put whole screen painted! */
-/*
-	char *text = "lets see if it works!";
-	sz = strlen(text);
+	memset(surface,0, mib.XResolution*mib.YResolution*2);	/* put whole screen painted! */
 	
-	file = open("chiffos TXT",1);	/* create file, 1 -> write */
-/*	write(file, text, 22); 			/* put text in file */
-/*	ls_dir();						/* list all files */
-	
-/*	int test;
-	test = open("chiffos TXT", 0);	/* open file, 0 -> read */
-/*	sz = read(test,0,current_task->fdtable[test].size); /* read the file */
-/*	kprint("\n");
-	*/
+	memset(surface,50, mib.XResolution*mib.YResolution*2);
+
+}
+void FAT_file_testing()
+{
+	int file;					
+	int next;
+
+	file = open("gloader",0);
+    read(file,0,current_task->fdtable[file].size);
+
+
+	next = open("test.txt",0);
+	read(next,0,current_task->fdtable[next].size);
+	file = open("test.txt",1);
+	write(file,"i am tired!", 5);	/* this overites first 16 entries */
+	ls_dir();				
 }
 
 #define FS_FILE       0
@@ -113,7 +132,7 @@ FILE parse_dir( char* DirectoryName)
 	char DosFileName[11];
 	ToDosFileName (DirectoryName, DosFileName, 11);
 	DosFileName[11]=0;
-
+	kprint("%s",  directory->Filename);
 	FILE file;
 	unsigned char buf[512];
 	directory = (DIRECTORY*)kmalloc(sizeof(directory));
@@ -122,19 +141,23 @@ FILE parse_dir( char* DirectoryName)
 
 	int i;
 	directory = (DIRECTORY*) buf;
-
+	int counter = 0;
+	while(counter < 64)
+	{
+		
 	    for (i=0; i<128; i++) {		
     			char name[11];
     			memcpy (name, DosFileName, 11);
     			name[11]=0;
 	
 				if (strncmp (DosFileName, directory->Filename,11) == 0) {
-					#ifdef DEBUGGING
+					kprint("..");
+					
 					kprint("Filename: %s\n", name);
 					kprint("FileSize: %d BYTES\n", directory->FileSize);
 					kprint("Attrib: %d\n", directory->Attrib);
 					kprint("FirstCluster %d\n", directory->FirstCluster);
-					#endif
+					
 					
 					file.id             = 0;
 					file.currentCluster = directory->FirstCluster;
@@ -145,20 +168,22 @@ FILE parse_dir( char* DirectoryName)
 					file.flags = FS_DIRECTORY;
 					else
 					file.flags = FS_FILE;
-					free(directory);
+					/*free(directory);*/
 					return file;
 					
 					
 		}
     	 directory++;
+    	 counter++;
 	}
+	if(counter > NUM_entries)
+		read_disc_sector(0,buf,_MountInfo.rootOffset++);
+  }
 	return file;
 }
 
-
-
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*50
+#define CLUSTER_SIZE 512*70
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
@@ -190,19 +215,19 @@ int read_file(FILE file )
 	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 	
 	int i;
-for(i = 0; i < file.fileLength; i++)
+	for(i = 0; i < file.fileLength; i++)
 	{	
 		if(!file.eof)
 			kputch(FAT_table[i]);
 	}
 	return file.fileLength;
 }
-
+#define LBAoffset 5
 void write_file(FILE file , char *buf, u8 method)
 {
 	u32 cluster_start_lba;
 	if(method == 1) /*write metadata e.g create files*/
-		cluster_start_lba = _MountInfo.rootOffset;
+		cluster_start_lba = _MountInfo.rootOffset;		/*if LBAoffset is 1 then jump 16 entries from root and put metadata there */
 
 	if(method == 2) /*write contents to that file*/
 	cluster_start_lba = _MountInfo.rootOffset +(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
@@ -210,32 +235,46 @@ void write_file(FILE file , char *buf, u8 method)
 	write_disc_sector(cluster_start_lba,buf);
 }
 
+
 #define NUM_FILES 8
 
 u8 *ls_dir()
 {
 	FILE file;
 	unsigned char buf[512];
-	directory = (DIRECTORY*)kmalloc(sizeof(directory));	
+	lsdirectory = (DIRECTORY*)kmalloc(sizeof(lsdirectory));	
 	read_disc_sector(0,buf,_MountInfo.rootOffset);
 
+int counter = 0;
 	int i;
-	directory = (DIRECTORY*) buf;
+	while(counter < 64)
+	{
+	lsdirectory = (DIRECTORY*) buf;
 
 	    for (i=0; i<NUM_FILES; i++) {		
     			char name[11];
-    			memcpy (name, directory->Filename, 11);
+    			memcpy (name, lsdirectory->Filename, 11);
     			name[11]=0;
-    				if (directory->Attrib == 0x20 || directory->Attrib == 0x10)
+    				if (lsdirectory->Attrib == 0x20 || directory->Attrib == 0x10)
     				{
-						kprint("%s %d BYTES\n",name, directory->FileSize);
+						if(counter > 32)
+							{		
+								kprint("%s %d BYTES cluster %d \n",name, lsdirectory->FileSize,lsdirectory->FirstCluster);				
+							}
+						if(counter < 8)
+						kprint("%s %d BYTES cluster %d \n",name, lsdirectory->FileSize,lsdirectory->FirstCluster);
 						/*return directory->Filename;*/
 					}
-    	 directory++;    	 
+    	 lsdirectory++; 
+    	counter++;
+   	 
 	}
-	free(directory);
+	if(counter > NUM_entries)
+		read_disc_sector(0,buf,_MountInfo.rootOffset++);
+  }
+	
 	/*SUBdirs and subfiles and prints out subfiles data*/
-	directory = (DIRECTORY*) &FAT_table;
+/*	directory = (DIRECTORY*) &FAT_table;
 
 	    for (i=0; i<NUM_FILES; i++) {		
     			char name[11];
@@ -251,29 +290,32 @@ u8 *ls_dir()
 					    read_file(file);					    
 					}
     	 directory++;
-	}
+	}*/
+	return lsdirectory->Filename;
 }
 
-
 #define O_RDONLY 0
-
+int fd =4;
 int open(const char *path, int mode) {
 	FILE node = parse_dir(path);
-	int fd =4;
-	fd++;
-	if (mode != O_RDONLY)
+	
+	
+	if (mode == 1)
 	{
+		fd++;
 		/*file_meta_data[33] = path[0];*/
-		file_meta_data[32] = path[0];
+	/*	file_meta_data[32] = path[0];
 		file_meta_data[33] = path[1];
 		file_meta_data[34] = path[2];
 		file_meta_data[35] = path[3];
 		file_meta_data[36] = path[4];
 		file_meta_data[37] = path[5];
 		file_meta_data[38] = path[6];
+
+		*/
 		write_file(node,file_meta_data,1); /* todo: specify filename with path*/
 		
-		current_task->fdtable[fd].node[22] = node; /* node[x] -> x = size of write message , todo: fix this !*/
+		current_task->fdtable[fd].node[5] = node; /* node[x] -> x = size of write message , todo: fix this !*/
 		return fd;		
 	}
 	if(mode == 0)

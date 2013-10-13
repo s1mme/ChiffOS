@@ -14,7 +14,7 @@ typedef enum
 #define PRIO_IDLE 0
 #define PRIO_LOW 1
 #define PRIO_HIGH 2
-#define CLUSTER_SIZE 50	/* to big value gives pagefault!! */
+#define CLUSTER_SIZE 200	/* to big value gives pagefault!! */
 
 typedef struct open_file {
 	int count;
@@ -27,7 +27,7 @@ typedef struct open_file {
 	void *data; 
 } open_file_t;
 
-#define OPEN_MAX 4
+#define OPEN_MAX 12
 struct task
 {
 	open_file_t fdtable[OPEN_MAX];
@@ -55,7 +55,7 @@ extern volatile bool task_switching;
 extern volatile task_t *current_task;
 extern volatile task_t *ready_queue;
 void _task_initialize();
-void create_process(void (*process)(),int priority,int argc, char** argv);
+void create_process(void (*process)(),task_type type,u8 privilege, int argc, char** argv);
 void create_v86_task(void (*thread)());
 void exit();
 #endif

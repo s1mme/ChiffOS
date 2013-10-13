@@ -4,6 +4,8 @@
 #include <vmmngr.h>
 #include <elf.h>
 #include <fat.h>
+#include <proc.h>
+#include <syscalls.h>
 #define SBRK_START 0x1400000
 #define SBRK_END 6000912
 void cli()
@@ -40,14 +42,27 @@ else {
 	}
 }
 
+int fstat(int fd, struct stat *st) {
+	
+	kprint("hej");
+    if (!st)return -1;
+    memset(st, 0, sizeof(struct stat));
 
+    /*st->st_ino = current_task->fdtable[fd].node->inode;*/ 
+    st->st_mode = 0666 | S_IFCHR; 
+    st->st_size = current_task->fdtable[fd].size;
+    st->st_blksize = 128;   
+    return 0;
+}
 
-void *syscalls[3] =
+void *syscalls[] =
 {
 	&sbrk,
 	&write,
+	&read,
 	&open,
-	&read
+	&fstat,
+	&kputs
 };
 
 void syscall_handler(regs_t *r)
