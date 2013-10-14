@@ -44,7 +44,6 @@ else {
 
 int fstat(int fd, struct stat *st) {
 	
-	kprint("hej");
     if (!st)return -1;
     memset(st, 0, sizeof(struct stat));
 

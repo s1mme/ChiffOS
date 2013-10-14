@@ -51,7 +51,7 @@ typedef struct _DIRECTORY {
 	u16  FirstClusterHiBytes;
 	u16  LastModTime;           
 	u16  LastModDate;
-	u16  FirstCluster;          
+	u16  FirstCluster;         
 	u32  FileSize;            
 
 }__attribute__((packed));
@@ -74,6 +74,8 @@ typedef struct _MOUNT_INFO {
 typedef struct _FILE {
 
 	char   name[8];
+	u8 	   Ext[3];
+	u8     Attrib;
 	u32    flags;
 	u32    fileLength;
 	u32    id;
@@ -87,7 +89,7 @@ typedef struct _FILE FILE;
 
 void mount_fat32();
 void FAT_vesa();
-void write_file(FILE file , char *buf, u8 method);
+void write_file(FILE file , char *buf, u8 method, u32 offset);
 int open(const char *path, int mode);
 elf_header_t * read_elf(FILE file );
 int write(int file, char* buf, int length);
