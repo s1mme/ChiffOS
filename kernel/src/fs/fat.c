@@ -62,7 +62,6 @@ void FAT_testing_newlib()
 	create_process((void*)elf_program->entry,THREAD,0,0,0);
 }
 
-
 void FAT_vesa()
 {
 	elf_header_t * elf_program;
@@ -115,10 +114,10 @@ void FAT_file_testing()
 	file = open("znark.txt",0);
 	/*read(file,0,current_task->fdtable[file].size);*/
 		
-	char *name = "epzordiu";
+	char *name = "kosmisk";
 	next = open(name,1);		
 	write(next,"HEY how are you doin?!", strlen(name)); 
-	next = open("epzordiu.TXT",0);	
+	next = open("kosmisk.TXT",0);	
     read(next,0,current_task->fdtable[next].size);
 }
 
@@ -136,7 +135,7 @@ void FAT_file_testing()
 #define ATTRIB_LFN (ATTRIB_READONLY | ATTRIB_HIDDEN | ATTRIB_SYSTEM | ATTRIB_VOLUME_ID)
 
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 512*60
+#define CLUSTER_SIZE 400000
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
@@ -201,7 +200,7 @@ void write_file(FILE file , char *buf, u8 method, u32 offset)
 
 	if(method == 2) /*write contents to that file*/
 	{
-		cluster_start_lba =  _MountInfo.rootOffset+(3 - 2) * SECTOR_PER_CLUSTER;
+		cluster_start_lba =  _MountInfo.rootOffset+(22 - 2) * SECTOR_PER_CLUSTER;
 		read_file(file);
 		memcpy(FAT_table+offset, buf, 32);
 		FAT_table[cluster_start_lba] = 0x0FFFFFFF;
@@ -299,17 +298,22 @@ u32 first_free_cluster() {
 }
 
 #define O_RDONLY 0
-int fd =4;
+#define O_WRONLY 1537
+int fd =0;
+
 int open(const char *path, int mode) {
 	fd++;
+	kprint("mode %d", mode);
 	DIRECTORY *mdirectory;
 	FILE node;
 	node = ls_dir(path,0);
-	
+
 		 mdirectory = (DIRECTORY*)kmalloc(32);
 		 memset(mdirectory, 0, 32);	
-	if (mode == 1)
+
+	if (mode == 1 || mode == O_WRONLY)
 	{	
+	
 		FILE enode;
 		memcpy (mdirectory->Filename, path, 8);
 		memcpy (mdirectory->Ext, "TXT", 3);
@@ -323,8 +327,8 @@ int open(const char *path, int mode) {
 		mdirectory->LastModTime = 0x0000;
 		mdirectory->LastModDate = 0x0a39;
 
-
-		mdirectory->FirstCluster = 3;
+		/* important */
+		mdirectory->FirstCluster = 22;  /*todo: search for free cluster */
 
 		mdirectory->FileSize = 0x0000001b;  
 		enode.currentCluster = 1; 
@@ -362,12 +366,13 @@ int read(int file,  u8 *buffer, u32 size)
 
 int write(int file, char* buf, int length)
 {
+	kprint("file: %d", file);
 	int ret = 0;
-	if(file > 3)
+	if(file > 1)
 	{
 		write_file(current_task->fdtable[file].node[length],buf,2,0);
 	}
-	else
+	if(file <= 1)
 	{
 		const char *p = (const char *)buf;
 		int i;

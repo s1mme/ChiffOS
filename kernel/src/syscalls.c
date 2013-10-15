@@ -67,7 +67,7 @@ void *syscalls[] =
 void syscall_handler(regs_t *r)
 {
 	void *location = syscalls[r->eax];
-	kprint("syscall number :%d\n",r->eax);
+/*	kprint("syscall number :%d\n",r->eax);*/
 	  __asm__ volatile (
      "push %1; \
       push %2; \

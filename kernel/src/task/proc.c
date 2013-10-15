@@ -46,6 +46,7 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 {
 	
 	__asm__ __volatile__("cli");
+	
 	task_switching = false;
 	memset(new_task, 0, sizeof(task_t));
 	new_task->kernel_stack = kmalloc(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
@@ -104,6 +105,7 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	new_task->id = pid++;
 	insert_current_task(new_task);
 	__asm__ __volatile__("sti");
+	
 }
 
 s32 getpid()
