@@ -7,11 +7,11 @@ main:
 
     xor ax, ax
     mov ds, ax
-    mov es, ax
-    mov di, 0x3600
-    mov ax, 0x4F01
-    mov cx, word [0x3600] ; video mode
-    int 10h	
+    mov ax, 0x4F02
+    mov bx, word [0x3600] ; video mode  
+int 10h
+	
 
+exit:
     hlt
     jmp $   

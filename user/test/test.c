@@ -3,24 +3,32 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <stdio.h>
-/*void puts(unsigned char *buf)
+void puts_(unsigned char *buf)
 {
 	int a = 1;
-	int num = 0;
+	int num = 5;
 	unsigned char * test = "hello world!";
 	__asm__ __volatile__("int $0x80" : "=a" (a) : "0" (num), "b" (buf));
 }
-*/
+
 void main()
 {
-	/*FILE *f = fopen("file.txt", "w");
+	setvbuf(stdin, NULL, _IONBF, 0);		/* important!! */
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    
 	
-	const char *text = "Write this to the file";
-	fprintf(f, "Some text: %s\n", text);
-	/*printf("hejsan\n");*/
-	/*write(1,"hejsan",6);*/
+   FILE * fp;
 
-	for(;;);
+   fp = fopen ("kosmisk", "w");
+   fprintf(fp, "%s %s %s %d", "We", "are", "in", 2013);
+   
+   fclose(fp);
+   int num = 1234;
+   printf("number : %d", num);
+
+
+   for(;;);
 }
 
 

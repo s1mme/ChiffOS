@@ -1,6 +1,6 @@
 ; start.asm
 
-[BITS 16]
+[BITS 32]
 extern main
 ;extern _exit
 

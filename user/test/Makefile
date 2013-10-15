@@ -26,13 +26,13 @@ all: $(OBJFILES) link
 
 link:
 	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection)
-	if ! (mount | grep -q /mnt/fat); then \
-   	mount /dev/loop1 /mnt/fat; \
+	if ! (mount | grep -q /mnt/fat32); then \
+   	mount /dev/loop6 /mnt/fat32; \
 	fi
 	
 	
 	sleep 0.1
-	mv -f $(OUTNAME) /mnt/fat/
+	mv -f $(OUTNAME) /mnt/fat32/
 
 #../../misc/
 clean:

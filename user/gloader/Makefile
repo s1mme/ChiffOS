@@ -25,9 +25,9 @@ OUTNAME := $(shell basename `pwd`)
 all: $(OBJFILES) link
 
 link:
-	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection) 
+	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection)
 	if ! (mount | grep -q /mnt/fat32); then \
-	mount /dev/loop6 /mnt/fat32; \
+	mount /dev/loop6 /mnt/fat; \
 	fi
 	sleep 0.1
 	mv -f $(OUTNAME) /mnt/fat32/
