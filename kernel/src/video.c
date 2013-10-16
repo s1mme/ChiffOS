@@ -113,6 +113,8 @@ void vprintf(const char *args, va_list ap)
 			case '%':
 				switch(*(++args))
 					{
+						case 'c':
+							 kputch((s8)va_arg(ap, s32));
     					case 'x':
 							kputhex(va_arg(ap, u32));
 						break;

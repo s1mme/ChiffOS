@@ -94,5 +94,5 @@ int open(const char *path, int mode);
 elf_header_t * read_elf(FILE file );
 int write(int file, char* buf, int length);
 
-int read(int file,  u8 *buffer, u32 size);
+int read(int file,  void *buffer, u32 size);
 #endif

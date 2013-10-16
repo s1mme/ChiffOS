@@ -15,9 +15,9 @@
 BOOTSECTOR_t *bootsector;
 MOUNT_INFO _MountInfo;
 u32 first_free_cluster();
-
+u16 gcluster; 
 elf_header_t * read_elf(FILE file);
-
+int fd =0;
 
 FILE ls_dir( char* DirectoryName, u32 offset);
 FILE parse_dir( char* DirectoryName);
@@ -59,7 +59,7 @@ void FAT_testing_newlib()
 	elf_header_t * elf_program;
 	elf = ls_dir("test",0);
 	elf_program = read_elf(elf);
-	create_process((void*)elf_program->entry,THREAD,0,0,0);
+	create_process((void*)elf_program->entry,THREAD,3,0,0);
 }
 
 void FAT_vesa()
@@ -109,16 +109,19 @@ void FAT_file_testing()
 	int file;		
 	int next;
 	FILE test; 
-	
-	/*test = ls_dir("vesa",0);
-	file = open("znark.txt",0);
-	/*read(file,0,current_task->fdtable[file].size);*/
-		
+	int i = 0;
+	char buf[4096]; /*important*/
+	/*test = ls_dir("vesa",0);*/
+	file = open("text.txt",0);
+	read(file,buf,current_task->fdtable[file].size);
+	while(i < current_task->fdtable[file].size)
+	kputch(buf[i++]);
+	/*	
 	char *name = "kosmisk";
 	next = open(name,1);		
 	write(next,"HEY how are you doin?!", strlen(name)); 
 	next = open("kosmisk.TXT",0);	
-    read(next,0,current_task->fdtable[next].size);
+    read(next,0,current_task->fdtable[next].size);*/
 }
 
 #define FS_FILE       0
@@ -162,54 +165,56 @@ for(i = 0; i < file.fileLength; i++)
 
 int read_(FILE file )
 {
-	u32 sector_count = 1;/*file.fileLength/SECTOR_SIZE;*/
-
-	u32 cluster_start_lba = _MountInfo.rootOffset+(3 - 2) * SECTOR_PER_CLUSTER;
+	u32 sector_count = 1 ; /*file.fileLength/SECTOR_SIZE;*/
+	u32 cluster_start_lba = _MountInfo.rootOffset+(gcluster - 2) * SECTOR_PER_CLUSTER;
 	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
+	return file.fileLength;
 }
 
-int read_file(FILE file )
+int read_file(FILE file, char *buffer )
 {
-	/*kprint("fileLength: %d",file.fileLength);*/
 	u32 sector_count = 1 ; /*file.fileLength/SECTOR_SIZE;*/
-	u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
-	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
-		kprint("\n");
-	int i;
-	for(i = 0; i < file.fileLength; i++)
+	u32 cluster_start_lba = _MountInfo.rootOffset+(current_task->fdtable[fd].node[current_task->fdtable[fd].size].currentCluster - 2) * SECTOR_PER_CLUSTER;
+	read_disc_sector(sector_count,buffer,cluster_start_lba);
+
+	/*int i;
+	for(i = 0; i < current_task->fdtable[fd].size; i++)
 	{	
-		if(!file.eof)
-			kputch(FAT_table[i]);
+	
+			kputch(buffer[i]);
 		
 	}
-	kprint("\n");
+	kprint("\n");*/
 	return file.fileLength;
 }
 #define LBAoffset 5
+
 void write_file(FILE file , char *buf, u8 method, u32 offset)
 {	
+	
+	
 	u32 cluster_start_lba;
 	if(method == 1) /*write metadata e.g create files*/
 	{
 		cluster_start_lba = _MountInfo.rootOffset+1;	
-		read_file(file);
-		memcpy(FAT_table+offset, buf, 32);
+		read_(file);
+		memcpy(FAT_table+0, buf, 32);
 		FAT_table[cluster_start_lba] = 0x0FFFFFFF;
 		write_disc_sector(cluster_start_lba,FAT_table);
 	}	
 
 	if(method == 2) /*write contents to that file*/
 	{
-		cluster_start_lba =  _MountInfo.rootOffset+(22 - 2) * SECTOR_PER_CLUSTER;
-		read_file(file);
-		memcpy(FAT_table+offset, buf, 32);
+		cluster_start_lba =  _MountInfo.rootOffset+(gcluster - 2) * SECTOR_PER_CLUSTER;
+		read_(file);
+		memcpy(FAT_table+0, buf, 32);
 		FAT_table[cluster_start_lba] = 0x0FFFFFFF;
 		write_disc_sector(cluster_start_lba,FAT_table);
 	}	
 }
 
 
-#define NUM_FILES 8
+#define NUM_FILES 20
 
 FILE ls_dir( char* DirectoryName, u32 offset)
 {	
@@ -232,15 +237,17 @@ int counter = 0;
 
 	    for (i=0; i<NUM_FILES; i++) {		
     			char name[11];
+    		
     			memcpy (name, lsdirectory->Filename, 11);
     			name[11]=0;
     				if (lsdirectory->Attrib == 0x20 || lsdirectory->Attrib == 0x10)
     				{
 					if (strncmp (DosFileName, lsdirectory->Filename,11) == 0) {
-						kprint("Filename: %s\n", name);
-					kprint("FileSize: %d BYTES\n", lsdirectory->FileSize);
-					kprint("Attrib: %d\n", lsdirectory->Attrib);
-					kprint("FirstCluster %d\n", lsdirectory->FirstCluster);
+				
+					kprint(" Filename: %s\n", name);
+					kprint(" FileSize: %d BYTES\n", lsdirectory->FileSize);
+					kprint(" Attrib: %d\n", lsdirectory->Attrib);
+					kprint(" FirstCluster %d\n", lsdirectory->FirstCluster);
 					
 					file.Attrib  		= lsdirectory->Attrib;
 					memcpy (file.name, lsdirectory->Filename, 8);
@@ -293,31 +300,37 @@ _MountInfo.rootOffset = backupinfo;
 u32 first_free_cluster() { 
 	int i;
 	for ( i=0; i <  _MountInfo.numSectors; i++) {
-		if (FAT_table[i] == 0) return i;
+		if (FAT_table[i*512] == 0) return i;
 	}
 }
 
+u32 first_free_entry() { 
+	int i;
+	for ( i=0; i <  _MountInfo.numSectors; i++) {
+		if (FAT_table[i*32] == 0) return i*32;
+	}
+}
 #define O_RDONLY 0
 #define O_WRONLY 1537
-int fd =0;
+
 
 int open(const char *path, int mode) {
 	fd++;
-	kprint("mode %d", mode);
+	kprint("\n");
+	kprint("Mode: %d\n", mode);
 	DIRECTORY *mdirectory;
-	FILE node;
-	node = ls_dir(path,0);
+	
 
-		 mdirectory = (DIRECTORY*)kmalloc(32);
-		 memset(mdirectory, 0, 32);	
+	mdirectory = (DIRECTORY*)kmalloc(32);
+	memset(mdirectory, 0, 32);	
 
 	if (mode == 1 || mode == O_WRONLY)
 	{	
-	
+		kprint("Creating a file...\n");
 		FILE enode;
 		memcpy (mdirectory->Filename, path, 8);
-		memcpy (mdirectory->Ext, "TXT", 3);
-		kprint("mdirectory->Filename %s",mdirectory->Filename );
+		memcpy (mdirectory->Ext, "txt", 3);
+		kprint("Filename -> %s\n",mdirectory->Filename );
 		mdirectory->Attrib = 0x20;
 		mdirectory->Reserved = 0x00;
 		mdirectory->TimeCreatedMs = 0x00;
@@ -328,24 +341,28 @@ int open(const char *path, int mode) {
 		mdirectory->LastModDate = 0x0a39;
 
 		/* important */
-		mdirectory->FirstCluster = 22;  /*todo: search for free cluster */
-
+		mdirectory->FirstCluster = first_free_cluster(); 
+		gcluster = mdirectory->FirstCluster;
 		mdirectory->FileSize = 0x0000001b;  
 		enode.currentCluster = 1; 
 		enode.fileLength = 0x0000001b;
 	
 		char buffer[32];
-
+		kprint("%d\n", first_free_entry);
 		memcpy(buffer, mdirectory, 32); 
 		write_file(enode,buffer,1,0); 
 		
 		current_task->fdtable[fd].node[5] = enode; /* node[x] -> x = size of write message , todo: fix this !*/
 		return fd;		
 	}
-	if(mode == 0)
+	if(mode == O_RDONLY)
 	{	 		
-		current_task->fdtable[fd].node[node.fileLength] = node;
+		FILE node;
+		node = ls_dir(path,0);
+		kprint(" FD num: %d\n", fd);
 		current_task->fdtable[fd].size = node.fileLength;
+		current_task->fdtable[fd].node[node.fileLength] = node;
+		kprint("\n");
 		return fd;
 		/* read file */
 	}
@@ -353,12 +370,9 @@ int open(const char *path, int mode) {
 
 
 
-int read(int file,  u8 *buffer, u32 size)
+int read(int file,  void *buffer, u32 size)
 {
-	if(file > 3)
-	{
-		read_file(current_task->fdtable[file].node[size]);	
-	}
+	read_file(current_task->fdtable[file].node[size],buffer);		
 	/*else 
 	stdio_read(current_task->fdtable[file].node,buffer,size);*/
 	return current_task->fdtable[file].size;
@@ -366,7 +380,7 @@ int read(int file,  u8 *buffer, u32 size)
 
 int write(int file, char* buf, int length)
 {
-	kprint("file: %d", file);
+	/*kprint("file: %d", file);*/
 	int ret = 0;
 	if(file > 1)
 	{
@@ -376,10 +390,12 @@ int write(int file, char* buf, int length)
 	{
 		const char *p = (const char *)buf;
 		int i;
-		for ( i = 0; i < length && *p; i++) {
-			kputch(*p++);
-	}
+		for (i = 0; i < length && *p; i++) {
+			kputch(*p++);	
+			
 	ret++;
 	}
+}
 return ret;
+
 }

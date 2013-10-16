@@ -14,7 +14,7 @@ typedef enum
 #define PRIO_IDLE 0
 #define PRIO_LOW 1
 #define PRIO_HIGH 2
-#define CLUSTER_SIZE 60	/* to big value gives pagefault!! */
+#define CLUSTER_SIZE 600	/* to big value gives pagefault!! */
 
 typedef struct open_file {
 	int count;
@@ -27,7 +27,7 @@ typedef struct open_file {
 	void *data; 
 } open_file_t;
 
-#define OPEN_MAX 22
+#define OPEN_MAX 9
 struct task
 {
 	open_file_t fdtable[OPEN_MAX];

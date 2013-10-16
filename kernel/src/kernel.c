@@ -49,7 +49,9 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  mount_fat32();
 	 /* FAT_vesa();*/
 	 /*FAT_file_testing();*/
-	  FAT_testing_newlib();	
+	 /*FAT_file_testing();*/
+	 FAT_testing_newlib();
+	
 	 while(1)
 	  {
 		  kputch(getchar());
