@@ -12,6 +12,7 @@
 #include <fat.h>
 #include <proc.h>
 
+
 void kmain(struct multiboot *mbp, u32 magic)
 {
 	  init_video_term();
@@ -19,10 +20,11 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  idt_install();
 	  isrs_install();
 	  irq_install();
+	   __asm__ volatile("sti");
 	  timer_install(100);
 	  _vmmngr_initialize(mbp);
 	  _kbd_initialize();
-	  __asm__ volatile("sti");
+	 
 	  
 	  u32 a = kmalloc(8);
 	  u32 b = kmalloc(8);
@@ -47,15 +49,16 @@ void kmain(struct multiboot *mbp, u32 magic)
 	  TASK_testing();
 	
 	  mount_fat32();
-	 /* FAT_vesa();*/
-	 /*FAT_file_testing();*/
-	 /*FAT_file_testing();*/
-	 FAT_testing_newlib();
-	
-	 while(1)
+
+
+	  FAT_shell_newlib();
+	  
+	  exit();
+
+	/*while(1)
 	  {
 		  kputch(getchar());
-		  if(getchar() == 'b')
+		  /*if(getchar() == 'b')
 		  {
 			  int i;
 			  while(i < 1000)
@@ -63,10 +66,29 @@ void kmain(struct multiboot *mbp, u32 magic)
 					memset(0xa0000000,i, 1024*768*2);
 					i++;
 			  }
-		 }
+		 }*/
+	/*	 
+		 if(getchar() == 'p')
+		 {
+			int n = 0;
+			task_t *t;
+		    task_t *prev = ready_queue;
+			for (t = ready_queue; t != 0; prev = t, t = t->next) {
+				n++;
+				kprint(" \npriority: %d",t->priority);
+				kprint(" \nPID: %d",t->id);
+				kprint(" \nNAME: %s", t->name);
+				kprint(" \nSTATE: %s\n",(t->state == TASK_RUNNING ? "RUNNING" : (t->state == TASK_SLEEPING ? "SLEEPING" : "unknown")));
+
+				kprint("--------------\n");
+			}
+		kprint("%d tasks running\n\n",n);
+	
+		}		
+		
 	  }  
 	  
 	/*  u32 *ptr = (u32*)0x600000;
 	  u32 do_page_fault = *ptr;*/
-	  for(;;);
+
 }

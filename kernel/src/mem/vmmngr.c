@@ -141,10 +141,10 @@ u32 p_kmalloc(u32 size, u32 align, u32 *phys)
 	placement_address += size;
 	return tmp;
 }
-#define VESA_START 0xa0000000
-#define VESA_END   0xa9600000
-#define FAT_START 0x10b000
-#define FAT_END 0x50b0000
+#define VESA_START 0x1400000
+#define VESA_END   0x7500000
+#define FAT_START 0x200000
+#define FAT_END 0x50b000
 void _vmmngr_switch_directory(struct p_directory *dir)
 {
    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tablephysical));
@@ -169,10 +169,10 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	memset(pkdirectory,0,sizeof(struct p_directory));
 	u32 i = 0;
 	kprint("[INFO] placement_address: %x\n", placement_address);
-	 #define ELF_START 0x1400000
-#define ELF_END 0x1500000
+	#define ELF_START 0x1400000
+	#define ELF_END 0x1600000
 	
-	while(i < placement_address)
+	while(i < 0x1000000)
 	 {
 		_vmmngr_alloc_frame(_vmm_get_page_addr(i,1,pkdirectory),0,1);
 		i += 0x1000; 
@@ -181,11 +181,7 @@ void _vmmngr_initialize(struct multiboot *mbp)
 	for (i = VESA_START; i < VESA_END; i += 0x1000)
 		_vmm_get_page_addr(i, 1, pkdirectory);
 	 
-	for (i = FAT_START; i < FAT_START+FAT_END; i += 0x1000)
-		_vmm_get_page_addr(i, 1, pkdirectory);
-	 
-	for (i = FAT_START; i < FAT_START+FAT_END; i += 0x1000)
-		_vmmngr_alloc_frame( _vmm_get_page_addr(i, 1, pkdirectory), 0, 1);
+
 
 	
 	for (i = VESA_START; i < VESA_END; i += 0x1000)

@@ -8,13 +8,14 @@ typedef enum
 	THREAD, VM86
 	
 }task_type;
-
+#define TASK_RUNNING (1 << 0)
+#define TASK_SLEEPING (1 << 1)
 
 #define PRIO_DEAD 99
 #define PRIO_IDLE 0
 #define PRIO_LOW 1
 #define PRIO_HIGH 2
-#define CLUSTER_SIZE 600	/* to big value gives pagefault!! */
+#define CLUSTER_SIZE 200	/* to big value gives pagefault!! */
 
 typedef struct open_file {
 	int count;
@@ -22,12 +23,12 @@ typedef struct open_file {
 	u32  ino;
 	u32  _cur_ino; 
 	u32 offset;
-	u32 size;
+	int size;
 	FILE node[CLUSTER_SIZE];
 	void *data; 
 } open_file_t;
 
-#define OPEN_MAX 9
+#define OPEN_MAX 12
 struct task
 {
 	open_file_t fdtable[OPEN_MAX];
@@ -58,4 +59,8 @@ void _task_initialize();
 void create_process(void (*process)(),task_type type,u8 privilege, int argc, char** argv);
 void create_v86_task(void (*thread)());
 void exit();
+void task1();
+s32 getpid();
+int kill(int pid);
+int execve(char *name, char **argv, char **env);
 #endif

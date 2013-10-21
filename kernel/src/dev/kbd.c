@@ -4,7 +4,7 @@
 #include <irq.h>
 #include <kbd.h>
 u8 getchar();
-ringbuffer_t *keybuffer = 0;
+volatile ringbuffer_t *keybuffer = 0;
 u8 scan_code;
 u8 key_result;
 u8 keyboard_layout_us[128] =
@@ -50,6 +50,7 @@ u8 keyboard_layout_us[128] =
 
 u32 kbd_handler(u32 esp)
 {
+	
 	scan_code = inb(0x60);
 	if(scan_code & 0x80)
 	{
@@ -58,14 +59,16 @@ u32 kbd_handler(u32 esp)
 	else
 	{
 		key_result = keyboard_layout_us[scan_code];
+		
+	}
+	
 		if(key_result == 0)
 			return esp;
-	}
 	keybuffer->counter++;
-	if(keybuffer->counter == 128)
+	if(keybuffer->counter == 256)
 		kprint("keybuffer -> FULL!");
 
-	if (keybuffer->write_ptr > keybuffer->data + 128)
+	if (keybuffer->write_ptr > keybuffer->data + 256)
 	keybuffer->write_ptr = keybuffer->data;	/*wrap write_ptr back to zero to behave like a circular buffer!*/
 
 	*(keybuffer->write_ptr++) = key_result;
@@ -81,15 +84,44 @@ void _kbd_initialize()
     keybuffer->write_ptr = keybuffer->data;
 	register_device(1,kbd_handler);
 }
+int getch_char;
+u8 getch_polling()
+{
+
+	 if(keyboard_layout_us[inb(0x60)] != 0) 
+		outb(0x60,0xf4); 
+     
+     while(keyboard_layout_us[inb(0x60)] == 0); 
+	 getch_char = keyboard_layout_us[inb(0x60)];
+     outb(0x60,0xf4); 
+	 
+     return getch_char; 
+	
+}
+void idleloop()
+{
+while (keybuffer->counter == 0 ){
+		break;
+	}
+
+}
 
 u8 getchar()
 {
-	while (keybuffer->counter == 0) {
-	return 0;
+	
+	while(keybuffer->counter == 0)
+	 {
+		__asm__ __volatile__("sti");
 	}
+	
+	
 	u8 getkey = *(keybuffer->read_ptr++);
+	
 	keybuffer->counter--;
-	if (keybuffer->read_ptr > keybuffer->data + 128)	
+
+	if (keybuffer->read_ptr > keybuffer->data + 256)	
 	keybuffer->read_ptr = keybuffer->data; /*wrap read_ptr back to zero to behave like a circular buffer!*/
+	
 	return getkey;
+	
 }

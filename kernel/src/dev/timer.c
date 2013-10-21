@@ -3,7 +3,7 @@
 #include <video.h>
 #include <kutils.h>
 #include <proc.h>
- u32 timerticks = 0;
+volatile u32 timerticks = 0;
 	
 u32 uptime()
 {
@@ -20,15 +20,21 @@ void timer_div(int hz)
 }
  u32 timer_handle(u32 esp)
 {
+	
 	timerticks++;
-	if(current_task->time_to_run > 0) 
+	/*if(current_task->time_to_run > 2) 
 	{
-	current_task->time_to_run--;	
+		
+
+	current_task->time_to_run--;
+		
+
 }
-	else
-	{
+	else if(current_task->time_to_run < 2)
+	{*/
 	task_switching = true;
-}
+	
+/*	}*/
 	return esp;	
 }
    

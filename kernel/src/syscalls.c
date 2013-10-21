@@ -6,11 +6,17 @@
 #include <fat.h>
 #include <proc.h>
 #include <syscalls.h>
-#define SBRK_START 0x1400000
-#define SBRK_END 6000912
+#include <kbd.h>
+#define SBRK_START 0x1900000
+#define SBRK_END 0x3000000
 void cli()
 {
 	__asm__ volatile("cli");
+}
+
+int sti()
+{
+	__asm__ volatile("sti");
 }
 
 void *sbrk(int incr) {
@@ -56,12 +62,19 @@ int fstat(int fd, struct stat *st) {
 
 void *syscalls[] =
 {
-	&sbrk,
+	&sbrk, /* 0 */
 	&write,
 	&read,
 	&open,
 	&fstat,
-	&kputs
+	&kputch, 	/* 5 */
+	&execve,
+	&exit,
+	&getpid,
+	&kill,
+	&getchar,
+	&stdio_read,
+	&sti
 };
 
 void syscall_handler(regs_t *r)

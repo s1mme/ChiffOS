@@ -27,5 +27,6 @@ void set_term_color(u8 color);
 void kputs(const char *text);
 extern void kputhex(u32 n);
 extern void kputint(u32 n);
+int stdio_read(int fd, void *buf, int length);
 void kprint(const char *fmt, ...);
 #endif

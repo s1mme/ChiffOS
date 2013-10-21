@@ -136,6 +136,67 @@ void vprintf(const char *args, va_list ap)
 		}	
 }
 
+int stdio_read(int fd, void *buf, int length) {
+	 
+	 if(fd == 1)
+		{
+			buf = getchar();
+			return 1;
+		}
+char *p = (char *)buf;
+
+
+
+int ret = 0;
+while (p < (char *)buf + 20 - 1 /* NULL termination */) {
+
+char c = getchar();
+
+if (c >= ' ' || c == '\n') {
+kputch(c); 
+update_cursor();
+}
+else if (c == '\b') {
+	
+if (p > (char *)buf) {
+p--;
+kputch(c);
+kputch(' ');
+kputch(c);
+update_cursor();
+ret--;
+}
+}
+else if (c == -1) {
+
+if (ret > 0)
+continue;
+else {
+kputch('^');
+kputch('D');
+return 0;
+}
+}
+
+
+if (c == '\r' || c == '\n') {
+ret++;
+*p++ = c;
+*p = 0;
+return ret;
+}
+else if (c != '\b') {
+*p++ = c;
+ret++;
+}
+}
+
+
+*p = 0;
+
+return ret;
+}
+
 void kprint(const char *fmt, ...)
 {
 	va_list ap;

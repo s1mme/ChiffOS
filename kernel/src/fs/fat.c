@@ -21,7 +21,7 @@ int fd =0;
 
 FILE ls_dir( char* DirectoryName, u32 offset);
 FILE parse_dir( char* DirectoryName);
-
+u32 scan_free_entry();
 char file_meta_data[] =
 {
  0x41, 0x6d, 0x0, 0x75, 0x00, 0x75, 0x00, 0x2e,  0x00, 0x74, 0x00, 0x0f, 0x00, 0xaf, 0x78, 0x00,  
@@ -53,11 +53,11 @@ void mount_fat32()
 u16 *surface;
 VESA_MODE_INFO mib;
 #define VESA_MODE 279
-void FAT_testing_newlib()
+void FAT_shell_newlib()
 {
 	FILE elf;
 	elf_header_t * elf_program;
-	elf = ls_dir("test",0);
+	elf = ls_dir("shell",0);
 	elf_program = read_elf(elf);
 	create_process((void*)elf_program->entry,THREAD,3,0,0);
 }
@@ -106,12 +106,15 @@ void FAT_vesa()
 }
 void FAT_file_testing()
 {
+	/*int ret = scan_free_entry();
+	kprint("%d", ret);*/
+	
 	int file;		
 	int next;
 	FILE test; 
 	int i = 0;
 	char buf[4096]; /*important*/
-	/*test = ls_dir("vesa",0);*/
+	test = ls_dir("vesa",0);
 	file = open("text.txt",0);
 	read(file,buf,current_task->fdtable[file].size);
 	while(i < current_task->fdtable[file].size)
@@ -138,7 +141,7 @@ void FAT_file_testing()
 #define ATTRIB_LFN (ATTRIB_READONLY | ATTRIB_HIDDEN | ATTRIB_SYSTEM | ATTRIB_VOLUME_ID)
 
 #define SECTOR_PER_CLUSTER 8
-#define CLUSTER_SIZE 400000
+#define CLUSTER_SIZE 460000
 #define SECTOR_SIZE 512
 #define FIRST_FAT_SECTOR 1
 u8 FAT_table[CLUSTER_SIZE];
@@ -148,6 +151,7 @@ elf_header_t * elf_header_;
 elf_header_t * read_elf(FILE file )
 {
 	u32 sector_count = file.fileLength/SECTOR_SIZE;
+	kprint("sector count : %d\n", sector_count);
 	u32 cluster_start_lba = _MountInfo.rootOffset+(file.currentCluster - 2) * SECTOR_PER_CLUSTER;
 	read_disc_sector(sector_count,FAT_table,cluster_start_lba);
 
@@ -173,10 +177,14 @@ int read_(FILE file )
 
 int read_file(FILE file, char *buffer )
 {
-	u32 sector_count = 1 ; /*file.fileLength/SECTOR_SIZE;*/
+	int ret;
+	/*	kprint("file size : %d\n", current_task->fdtable[fd].size);
+		*/
+	u32 sector_count =current_task->fdtable[fd].size/SECTOR_SIZE;
+	/*kprint("sector count: %d\n", sector_count);*/
 	u32 cluster_start_lba = _MountInfo.rootOffset+(current_task->fdtable[fd].node[current_task->fdtable[fd].size].currentCluster - 2) * SECTOR_PER_CLUSTER;
 	read_disc_sector(sector_count,buffer,cluster_start_lba);
-
+ret++;
 	/*int i;
 	for(i = 0; i < current_task->fdtable[fd].size; i++)
 	{	
@@ -185,7 +193,7 @@ int read_file(FILE file, char *buffer )
 		
 	}
 	kprint("\n");*/
-	return file.fileLength;
+	return ret;
 }
 #define LBAoffset 5
 
@@ -198,7 +206,7 @@ void write_file(FILE file , char *buf, u8 method, u32 offset)
 	{
 		cluster_start_lba = _MountInfo.rootOffset+1;	
 		read_(file);
-		memcpy(FAT_table+0, buf, 32);
+		memcpy(FAT_table+ 0, buf, 32);
 		FAT_table[cluster_start_lba] = 0x0FFFFFFF;
 		write_disc_sector(cluster_start_lba,FAT_table);
 	}	
@@ -215,6 +223,8 @@ void write_file(FILE file , char *buf, u8 method, u32 offset)
 
 
 #define NUM_FILES 20
+
+
 
 FILE ls_dir( char* DirectoryName, u32 offset)
 {	
@@ -324,7 +334,7 @@ int open(const char *path, int mode) {
 	mdirectory = (DIRECTORY*)kmalloc(32);
 	memset(mdirectory, 0, 32);	
 
-	if (mode == 1 || mode == O_WRONLY)
+	if ( mode == O_WRONLY)
 	{	
 		kprint("Creating a file...\n");
 		FILE enode;
@@ -348,7 +358,7 @@ int open(const char *path, int mode) {
 		enode.fileLength = 0x0000001b;
 	
 		char buffer[32];
-		kprint("%d\n", first_free_entry);
+		
 		memcpy(buffer, mdirectory, 32); 
 		write_file(enode,buffer,1,0); 
 		
@@ -370,21 +380,38 @@ int open(const char *path, int mode) {
 
 
 
+
+int x = 0;
 int read(int file,  void *buffer, u32 size)
 {
-	read_file(current_task->fdtable[file].node[size],buffer);		
-	/*else 
-	stdio_read(current_task->fdtable[file].node,buffer,size);*/
-	return current_task->fdtable[file].size;
+	int ret = 0;
+	if(file == 0)
+	{
+	ret = stdio_read(file,buffer,size);
+	return ret;
+}
+	else
+	{
+	if(x > 0)
+	{
+		x = 0;
+		return -1;
+	}
+	ret = read_file(current_task->fdtable[file].node[size],buffer);
+	x++;
+	return current_task->fdtable[fd].size;
+}
+	
+return ret;
 }
 
 int write(int file, char* buf, int length)
 {
-	/*kprint("file: %d", file);*/
+	/*kprint("write file is %d\n", file);*/
 	int ret = 0;
 	if(file > 1)
 	{
-		write_file(current_task->fdtable[file].node[length],buf,2,0);
+		write_file(current_task->fdtable[fd].node[length],buf,2,0);
 	}
 	if(file <= 1)
 	{

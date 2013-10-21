@@ -18,8 +18,19 @@ const u16 TIMER_HZ = 100;
 void exit();
 u32 counter = 0;
 u32 volatile pid = 0;
-#define TASK_RUNNING (1 << 0)
-#define TASK_SLEEPING (1 << 1)
+
+int execve(char *name, char **argv, char **env)
+{
+	int argc = 0;
+	while (argv[argc]) { ++argc; }
+	FILE elf;
+	elf_header_t * elf_program;
+	elf = ls_dir(name,0);
+	elf_program = read_elf(elf);
+	create_process((void*)elf_program->entry,THREAD,3,argc,argv);
+	return 1;
+}
+
 #define KERNEL_STACK_SIZE  4096
 void _task_initialize(void)
 {
@@ -34,7 +45,7 @@ void _task_initialize(void)
     current_task->next = 0;
     current_task->type = THREAD;
     current_task->priority = PRIO_HIGH;
-    current_task->time_to_run = 100;
+    current_task->time_to_run = 10;
     current_task->ready_to_run = 1;
 	current_task->kernel_stack = (u32)kmalloc(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
 	scheduler_install();
@@ -59,6 +70,7 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	{
 		tmp_task = tmp_task->next;
 	}
+	current_task->priority = priority;
 	tmp_task->next = new_task;
 	new_task->privilege = privilege;
 	new_task->type = type;
@@ -103,6 +115,8 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	new_task->eip = (u32)entry;
 	new_task->esp = (u32)kernel_stack; 
 	new_task->id = pid++;
+	
+	
 	insert_current_task(new_task);
 	__asm__ __volatile__("sti");
 	
@@ -115,7 +129,8 @@ s32 getpid()
 
 u32 _task_switch(u32 esp)
 {
-	
+
+			
 	if(!current_task) return esp;
 		
 	current_task->esp = esp;
@@ -124,6 +139,7 @@ u32 _task_switch(u32 esp)
 	current_task = get_current_task();
 	if(old_task == current_task)
 		return esp;
+ 			
 		
 	volatile task_t *t;
 	for (t = ready_queue; t != 0; t = t->next){
@@ -216,6 +232,7 @@ void sleep_task(u32 milliseconds)
 void task1()
 {			
 	kprint("Hello! from kernel task!\n");	
+	sleep_task(20000);
 	for(;;);
 }
 
@@ -280,4 +297,15 @@ void TASK_testing()
 	create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	
 	create_kernel_task(IdleTask,PRIO_HIGH);	*/
+}
+
+int kill(int pid) {
+  volatile task_t *t;
+  volatile task_t *prev = ready_queue;
+  for (t = ready_queue; t != 0; prev = t, t = t->next) {
+    if (t->id == pid) {
+        prev->next = t->next;
+      counter--;
+    }
+  }
 }
