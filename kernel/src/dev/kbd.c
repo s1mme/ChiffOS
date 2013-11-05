@@ -66,7 +66,7 @@ u32 kbd_handler(u32 esp)
 			return esp;
 	keybuffer->counter++;
 	if(keybuffer->counter == 256)
-		kprint("keybuffer -> FULL!");
+		printk("keybuffer -> FULL!");
 
 	if (keybuffer->write_ptr > keybuffer->data + 256)
 	keybuffer->write_ptr = keybuffer->data;	/*wrap write_ptr back to zero to behave like a circular buffer!*/
@@ -78,11 +78,11 @@ u32 kbd_handler(u32 esp)
 
 void _kbd_initialize()
 {
-	keybuffer = (ringbuffer_t*)kmalloc(sizeof(ringbuffer_t));
+	keybuffer = (ringbuffer_t*)malloc_(sizeof(ringbuffer_t));
 	keybuffer->counter = 0;
 	keybuffer->read_ptr = keybuffer->data;	/*both pointers use data array to store its data*/
     keybuffer->write_ptr = keybuffer->data;
-	register_device(1,kbd_handler);
+	install_device(1,kbd_handler);
 }
 int getch_char;
 u8 getch_polling()

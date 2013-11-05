@@ -1,0 +1,7 @@
+default 0
+hiddenmenu
+timeout 0
+
+title chiffOS
+kernel /boot/KERNEL 
+

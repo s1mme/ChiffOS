@@ -88,7 +88,7 @@ typedef struct _FILE {
 typedef struct _FILE FILE;
 
 void mount_fat32();
-void FAT_vesa();
+int FAT_vesa();
 void write_file(FILE file , char *buf, u8 method, u32 offset);
 int open(const char *path, int mode);
 elf_header_t * read_elf(FILE file );
@@ -96,4 +96,5 @@ int write(int file, char* buf, int length);
 void FAT_shell_newlib();
 FILE ls_dir( char* DirectoryName, u32 offset);
 int read(int file,  void *buffer, u32 size);
+unsigned int * giveSCREEN();
 #endif

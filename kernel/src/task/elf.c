@@ -5,24 +5,37 @@
 #include <kutils.h>
 #include <heapmngr.h>
 #include <proc.h>
-struct p_directory* pd = 0;
-#define ELF_START 0x1
-#define ELF_END 0x1790000
-const elf_header_t * elf_header;
-elf_header_t* parse_elf(void *elf_program_buf,u32 elf_file_size)
+
+page_directory_t* pd = 0;
+
+void* globalUserProgAddr; 
+uint32_t globalUserProgSize;
+uint32_t alignUp(uint32_t val, uint32_t alignment)
 {
-	const u8 *elf_start = elf_program_buf;
+    if (! alignment)
+        return val;
+    --alignment;
+    return (val+alignment) & ~alignment;
+}
+
+elf_header_t *elf_exec(const void* elf_program_buf, uint32_t elf_file_size, const char* programName,size_t argc, char** argv)
+{
+    const u8 *elf_start = elf_program_buf;
 	const u8 *elf_end = elf_start + elf_file_size;
-	elf_header = (elf_header_t *)elf_program_buf;
-	kprint("IDENT: %s\n", elf_header->ident);
-	kprint("TYPE: %x\n", elf_header->type);
-	kprint("MACHINE %x\n", elf_header->machine);
-	kprint("VERSION %x\n", elf_header->version);
+	const elf_header_t* elf_header = (elf_header_t *)elf_program_buf;
+	printk("IDENT: %s\n", elf_header->ident);
+	printk("TYPE: %x\n", elf_header->type);
+	printk("MACHINE %x\n", elf_header->machine);
+	printk("VERSION %x\n", elf_header->version);
  
-	pd = (struct p_directory*)p_kmalloc(sizeof(struct p_directory),1,NULL);
-    memset(pd, 0, sizeof(struct p_directory));
-	memcpy(pd, pkdirectory, sizeof(struct p_directory));
-	
+	pd = (page_directory_t*)malloc_a(sizeof(page_directory_t));
+    memset(pd, 0, sizeof(page_directory_t));
+	memcpy(pd, kernel_directory, sizeof(page_directory_t));
+	u32 adress;
+    adress = paging_getPhysAddr(pd);
+    
+	u32 test2;
+	test2 = adress + 0x1000;
     int i;
       	 
 /*	for (i = 0; i < ELF_START +  ELF_END; i += 0x1000)
@@ -42,31 +55,30 @@ elf_header_t* parse_elf(void *elf_program_buf,u32 elf_file_size)
 
 	const char* types[] = { "NULL", "Loadable Segment", "Dynamic Linking Information",
                                 "Interpreter", "Note", "??", "Program Header" };
-    kprint(" %s\n offset: %x\n vaddr: %x\n paddr: %x\n filesz: %x\n memsz: %d\n flags: %x\n align: %x\n",
+    printk(" %s\n offset: %x\n vaddr: %x\n paddr: %x\n filesz: %x\n memsz: %d\n flags: %x\n align: %x\n",
     types[ph->type], ph->offset, ph->vaddr, ph->paddr, ph->filesz, ph->memsz, ph->flags, ph->align);
     
+    globalUserProgAddr = (void*)(ph->vaddr);
+    globalUserProgSize = alignUp(ph->memsz,PAGESIZE);
     __asm__ __volatile__ ("cli");
     
-    _vmmngr_switch_directory(pd);
+   //switch_pagedirectory2(test2);
 
     memset((void*)ph->vaddr, 0, ph->filesz); 
 
-    memcpy((void*)ph->vaddr, elf_start+0x1000, ph->filesz);
+    memcpy((void*)ph->vaddr, elf_start+ph->offset, ph->filesz);
       
-    _vmmngr_switch_directory(pkdirectory);
+    _vmmngr_switch_directory(kernel_directory);
         
     __asm__ __volatile__ ("sti");
 
     header_pos += elf_header->phentrysize;
-         
-   /* if(strcmp("run", programName) == 0)
-    {*/		
-    kprint("Program entry: %x\n", elf_header->entry);
+     if(strcmp("run", programName) == 0)
+    {
+        create_process( (void*)elf_header->entry,THREAD, PRIO_IDLE,argc, argv);     
+    }    
+   		
+    printk("Program entry: %x\n", elf_header->entry);
     
-    /*create_process((void*)elf_header->entry,PRIO_HIGH,0, 0);  */  /*argc and argv*/ 
 	return elf_header;
-       
-    /*}*/
 }
-
-

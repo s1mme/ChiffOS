@@ -19,11 +19,12 @@ void insert_current_task(task_t* task_data)
 {
     ring_list_insert(task_queue, task_data);
 }
-
+bool scheduler_shouldSwitchTask()
+ 	{
+ 	return(task_queue->begin != task_queue->begin->next);
+ 	}
  	
 void delete_current_task(task_t* task_data)
 {
     ring_list_delete_first(task_queue, task_data);
 }
-
-

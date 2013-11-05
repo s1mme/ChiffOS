@@ -29,7 +29,7 @@ else if (reg < 0x08) {
 return inb(channels[channel].base + reg);	
 }
 else
-kprint("Invalid ATA register used");
+printk("Invalid ATA register used");
 return 0;
 }
 
@@ -44,8 +44,8 @@ __asm__ __volatile__("rep insw" : : "c"(count), "d"(port), "D"(buffer)); /*buffe
 void ata_init_and_detect_drives(void)
 {
 
-register_device(14, ata_interrupt_handler);
-register_device(15, ata_interrupt_handler);
+install_device(14, ata_interrupt_handler);
+install_device(15, ata_interrupt_handler);
 
     channels[ATA_PRIMARY].base = ATA_REG_BASE_PRI;
     channels[ATA_PRIMARY].ctrl = ATA_REG_DEV_CONTROL_PRI;
@@ -70,7 +70,7 @@ sleep(100);
 /* Polling */
 if (ide_cntrl_read_reg(i, ATA_REG_STATUS) == 0)
 {
-kprint("\nNo device!\n");
+printk("\nNo device!\n");
 continue;	
 }
 /*Probe for ATAPI Devices:*/
@@ -111,24 +111,30 @@ count++;
 }	
    for (i = 0; i < 4; i++)
      {
-         kprint(" Found %s Drive %dMB - %s\n Drive: %d Channel %d",
+         printk(" Found %s Drive %dMB - %s\n Drive: %d Channel %d",
             (const char *[]){"ATA", "ATAPI"}[ide_devices[i].Type], /* Type */
             ide_devices[i].Size / 1024 , /* Size */
             ide_devices[i].Model,
             ide_devices[i].Drive,
             ide_devices[i].Channel);	
 }
-kprint("\n");
+printk("\n");
 ide_cntrl_write_reg(ATA_PRIMARY, ATA_REG_CONTROL, 0);
 ide_cntrl_write_reg(ATA_SECONDARY, ATA_REG_CONTROL, 0);
 }
+   int counter_ = 0;
 
-void ide_cntrl_access_sector(u8 NumSectors, u32 lba_addr, u8 direction, u8 drive, u16 selector, u32 edi)
+void ide_cntrl_access_sector(u32 NumSectors, u32 lba_addr, u8 direction, u8 drive, u16 selector, u32 edi)
 {
-unsigned int channel = ide_devices[drive].Channel;
+	unsigned int channel = ide_devices[drive].Channel;
+	#define ATA_REG_DEV_CONTROL_NIEN (1 << 1)
+#define ATA_REG_DEV_CONTROL 0xffff 
+	 ide_cntrl_write_reg(channel, ATA_REG_DEV_CONTROL, ATA_REG_DEV_CONTROL_NIEN);
+
 while (ide_cntrl_read_reg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
       ;
 /*select drive*/
+
 ide_cntrl_write_reg(channel, ATA_REG_HDDEVSEL, 0xe0 | (ide_devices[drive].Drive << 4) | ((lba_addr >> 24) & 0x0f));
 
 
@@ -137,7 +143,7 @@ ide_cntrl_write_reg(channel, ATA_REG_SECCOUNT0, NumSectors);
 ide_cntrl_write_reg(channel, ATA_REG_LBA0, (lba_addr & 0x00000FF) >> 0);
 ide_cntrl_write_reg(channel, ATA_REG_LBA1, (lba_addr & 0x000FF00) >> 8);
 ide_cntrl_write_reg(channel, ATA_REG_LBA2, (lba_addr & 0x0FF0000) >> 16);
-
+lba_addr = 0;
 /*send read or write command*/
 if(direction == 0)
 ide_cntrl_write_reg(channel, ATA_REG_COMMAND, ATA_CMD_READ_PIO);
@@ -146,7 +152,7 @@ ide_cntrl_write_reg(channel, ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
 
     unsigned int bus = channels[channel].base;
     unsigned int words = 256;
-    
+ 
 /*read or write sector from disc*/
 if(direction == 0) /*read*/
 {
@@ -163,8 +169,11 @@ int i;
          __asm__ __volatile__("mov %%ax, %%es" : : "a"(selector));
          __asm__ __volatile__("rep insw" : : "c"(words), "d"(bus), "D"(edi));
           __asm__ __volatile__("popw %es"); 
-          edi += (words*2);   
+          edi += (words*2);  
+        //  counter_++;
+       //  printk("%d\n", counter_); 
       }
+      
 }
 else /*write*/
 {
@@ -180,17 +189,17 @@ outw(port, words[i]);
 
 #define WRITE_SECTOR 1
 #define READ_SECTOR 0
-u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum)
+u16 read_disc_sector(u32 sector, u32 *edi, u32 LBAnum)
 {
 /*testing*/
 
 sector += 1;
-ide_cntrl_access_sector(sector,LBAnum,READ_SECTOR,1,0x000,edi);
+ide_cntrl_access_sector(sector,LBAnum,READ_SECTOR,1,0x00,edi);
     int c;
 #ifdef DEBUGGING
 for ( c = 0; c < (sector*512); c++ )
 {
-kprint("%x", edi[c]);
+printk("%x", edi[c]);
 }
 #endif
 return edi;
@@ -214,7 +223,7 @@ ide_cntrl_read_reg(channel, ATA_REG_ALTSTATUS);
 ide_cntrl_read_reg(channel, ATA_REG_STATUS);
 
 ata_irq_counts++;
-/*kprint("ATA irq count: %d", ata_irq_counts);*/
+/*printk("ATA irq count: %d", ata_irq_counts);*/
 return esp;
 }
 

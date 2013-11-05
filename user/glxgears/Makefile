@@ -1,15 +1,15 @@
 WARNINGS := 
 
 CC = i586-pc-chiffos-gcc
-CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static -I/home/kosmick/chiffOS/kernel/h/ -I/home/kosmick/chiffOS_newlib/newlib-build/i586-pc-chiffos/include/
+CFLAGS := -O0 -std=gnu99 -march=i586 $(WARNINGS) -ggdb3 -static -I/home/kosmick/backup_chiffOS/chiffOS/user/thirdparty/Mesa/Mesa-7.5.1/include/ -I/home/kosmick/chiffOS/kernel/h/ -I/home/kosmick/chiffOS_newlib/newlib-build/i586-pc-chiffos/include/
 LD = i586-pc-chiffos-ld
-LDFLAGS := -T../user.ld 
+LDFLAGS := -Tuser.ld 
 
 NASMFLAGS = -Ox -f elf
 PROJDIRS := 
 SRCFILES := $(shell find . -type f -name '*.c')
 
-LIBS = libc.a
+LIBS = libOSMesa32.a libc.a libm.a 
 SourceDir= /home/kosmick/chiffos/ChiffOS/libc/
 LIBS_collection=$(addprefix $(SourceDir),$(LIBS))
 
@@ -25,7 +25,7 @@ OUTNAME := $(shell basename `pwd`)
 all: $(OBJFILES) link
 
 link:
-	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection)
+	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection) -Map kernel.map
 	#if ! (mount | grep -q /mnt/fat32); then \
    	#mount /dev/loop6 /mnt/fat32; \
 	#fi

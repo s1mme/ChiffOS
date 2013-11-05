@@ -3,7 +3,7 @@
 #include <types.h>
 ring_t* ring_list_create()
 {
-    ring_t* ring = kmalloc(sizeof(ring_t));
+    ring_t* ring = malloc_(sizeof(ring_t));
     return ring;
 }
 
@@ -11,14 +11,14 @@ void ring_list_insert(ring_t* ring, void* data)
 {
     if(!ring->begin) 
     {
-        ring->begin = kmalloc(sizeof(element_t));
-        ring->current = kmalloc(sizeof(element_t));
+        ring->begin = malloc_(sizeof(element_t));
+        ring->current = malloc_(sizeof(element_t));
         ring->current->next = ring->current;
         ring->current->data = data;
     }
     else
     {
-        element_t* item = kmalloc(sizeof(element_t));
+        element_t* item = malloc_(sizeof(element_t));
         item->data = data;
         item->next = ring->current->next;
         ring->current->next = item;

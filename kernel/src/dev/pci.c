@@ -3,6 +3,7 @@
 #include <kutils.h>
 #include <pci.h>
 #include <heapmngr.h>
+
 void check_type_of_pci_method()
 {
 	
@@ -58,7 +59,7 @@ void scan_pci_bus(int BusNum)
 	int nDev, nFnc;
 	u32 nVendorID;
 	set_term_color(80);
-	kprint("PCI: Scanning Bus %d\n", BusNum );
+	printk("PCI: Scanning Bus %d\n", BusNum );
 	for ( nDev = 0; nDev < 8; nDev++ )
 	{
 		for ( nFnc = 0; nFnc < 4; nFnc++ )
@@ -66,21 +67,21 @@ void scan_pci_bus(int BusNum)
 			nVendorID = read_pci_config( BusNum, nDev, nFnc, PCI_CLASS_BASE, 2 );
 			if ( nVendorID && (nVendorID != 0xFFFF) )
 			{
-				pci_info = kmalloc( sizeof( PCI_table ));
+				pci_info = malloc_( sizeof( PCI_table ));
 
 				if ( pci_info != NULL )
 				{
 					set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));	
 					read_pci_table( pci_info, BusNum, nDev, nFnc );					
-					kprint("VendorID: %x DeviceID: %x  at %d:%d:%d Classcode: %x Subclass:%x Status: %x irq: %d\n",
+					printk("VendorID: %x DeviceID: %x  at %d:%d:%d Classcode: %x Subclass:%x Status: %x irq: %d\n",
 					pci_info->nVendorID, pci_info->nDeviceID, BusNum, nDev, nFnc,pci_info->nClassBase, pci_info->nClassSub,pci_info->nStatus,pci_info->u.h0.nInterruptLine);
 									
-					/*kprint("%x\n", pci_info->u.h0.nBase0);
-					kprint("%x\n", pci_info->u.h0.nBase1);
-					kprint("%x\n", pci_info->u.h0.nBase2);
-					kprint("%x\n", pci_info->u.h0.nBase3);
-					kprint("%x\n", pci_info->u.h0.nBase4);
-					kprint("%x\n", pci_info->u.h0.nBase5);*/
+					/*printk("%x\n", pci_info->u.h0.nBase0);
+					printk("%x\n", pci_info->u.h0.nBase1);
+					printk("%x\n", pci_info->u.h0.nBase2);
+					printk("%x\n", pci_info->u.h0.nBase3);
+					printk("%x\n", pci_info->u.h0.nBase4);
+					printk("%x\n", pci_info->u.h0.nBase5);*/
 				}
 				free(pci_info);
 			}
@@ -88,7 +89,7 @@ void scan_pci_bus(int BusNum)
 	}
 	set_term_color(80);
 
-	kprint("PCI: Scanning ended!");
+	printk("PCI: Scanning ended!");
 	set_term_color(make_color(COLOR_BLACK,COLOR_WHITE));
 }
 

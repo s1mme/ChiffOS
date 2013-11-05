@@ -1,5 +1,5 @@
 #include <types.h>
-#include <stddef.h> /*size_t*/
+
 #include <video.h>
 #include <kutils.h>
 u16 *memsetw(u16 *dest, u16 value, int count)
@@ -88,7 +88,14 @@ u32 inl(u16 port)
     __asm__ volatile ("in %%dx,%%eax" : "=a" (ret_val) : "d"(port));
     return ret_val;
 }
-
+char *strcpy(char *dest, const char *src)
+{
+    do
+    {
+      *dest++ = *src++;
+    }
+    while (*src != 0);
+}
 u32 strcmp(const char *s1, const char *s2)
 {
 	while((*s1) && (*s1 == *s2))
@@ -97,6 +104,31 @@ u32 strcmp(const char *s1, const char *s2)
 		++s2;
 	}	
 	return (*s1 - *s2);
+}
+size_t
+strlcpy(char *dst, const char *src, size_t siz)
+{
+	register char *d = dst;
+	register const char *s = src;
+	register size_t n = siz;
+
+	
+	if (n != 0 && --n != 0) {
+		do {
+			if ((*d++ = *s++) == 0)
+				break;
+		} while (--n != 0);
+	}
+
+	
+	if (n == 0) {
+		if (siz != 0)
+			*d = '\0';		/* NUL-terminate dst */
+		while (*s++)
+			;
+	}
+
+	return(s - src - 1);	/* count does not include NUL */
 }
 int strncmp( const char *s1,  const char *s2, size_t n) {
 unsigned char uc1, uc2;
@@ -108,6 +140,17 @@ if (n == 0 || *s1 == '\0')
 return 0;
 s1++, s2++;
 }
+}
+int memcmp(const void *lhs, const void *rhs, size_t count) {
+const u8 *us1 = (u8 *)lhs;
+const u8 *us2 = (u8 *)rhs;
+while (count-- != 0) {
+if (*us1 != *us2)
+return (*us1 < *us2) ? -1 : 1;
+us1++, us2++;
+}
+
+return 0;
 }
 #define toupper(c)      ((c) - 0x20 * (((c) >= 'a') && ((c) <= 'z')))
 void ToDosFileName (const char* filename,

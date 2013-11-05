@@ -24,7 +24,7 @@ typedef struct ide_device {
 
 typedef struct ide_device IDE_DEVICES;
 void ata_init_and_detect_drives();
-u16 read_disc_sector(u32 sector, u8 *edi, u32 LBAnum);
+u16 read_disc_sector(u32 sector, u32 *edi, u32 LBAnum);
 void write_disc_sector(u32 lba_start_num,char buf[512]);
 
 #define ATA_CMD_CACHE_FLUSH       0xE7

@@ -12,8 +12,6 @@ void puts_(unsigned char *buf)
 }
 
 
-	
-
 #define BUFFERSIZE 60
 unsigned char buf[20];
 int x;
@@ -44,7 +42,7 @@ int main(int argc, char *argv[])
     
     while(fgets(buffer, BUFFERSIZE , stdin) != NULL)
     {		  
-		puts_("root@chiffos $ ");
+		//printf("root@chiffos $ ");
        
          if(strcmp(buffer, "cat\n") == 0)
 		 {
@@ -114,16 +112,24 @@ int main(int argc, char *argv[])
 					
                      char **envp = { NULL};
 
-		     execve("test",argv,envp);
+		     execve("hello",argv,envp);
 	     }
-	}			  
-	    if(strcmp(buf, "test\n") == 0)
+	     if(strcmp(buf, "glxgears") == 0)
 		 {    
-			/*	char *argv[] = {"hello", "-h", NULL};*/
-			/*execve("test",argv2,envp); */
+			char **envp = { NULL};
+			char *argv[] = {"glxgears", "-h", NULL};
+			execve("glxgears",argv,envp); 
+			/* kill(getpid());*/
+		 } 
+		   if(strcmp(buf, "run") == 0)
+		 {    
+			char *argv[] = {"run", "-h", NULL};
+			execve("run",argv,2); 
 			/* kill(getpid());*/
 		 } 
 	 }
+	}			  
+	    
 	 
     
 }

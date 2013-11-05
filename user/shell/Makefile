@@ -10,7 +10,7 @@ PROJDIRS :=
 SRCFILES := $(shell find . -type f -name '*.c')
 
 LIBS = libc.a
-SourceDir= /home/kosmick/chiffOS/libc/
+SourceDir= /home/kosmick/chiffos/ChiffOS/libc/
 LIBS_collection=$(addprefix $(SourceDir),$(LIBS))
 
 
@@ -26,13 +26,13 @@ all: $(OBJFILES) link
 
 link:
 	@$(LD) $(LDFLAGS) -o $(OUTNAME) $(OBJFILES) $(LIBS_collection)
-	if ! (mount | grep -q /mnt/fat32); then \
-   	mount /dev/loop6 /mnt/fat32; \
-	fi
+	#if ! (mount | grep -q /mnt/fat32); then \
+   	#mount /dev/loop6 /mnt/fat32; \
+	#fi
 	
 	
 	sleep 0.1
-	mv -f $(OUTNAME) /mnt/fat32/
+	#mv -f $(OUTNAME) /mnt/fat32/
 
 #../../misc/
 clean:

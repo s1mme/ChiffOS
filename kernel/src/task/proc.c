@@ -27,15 +27,15 @@ int execve(char *name, char **argv, char **env)
 	elf_header_t * elf_program;
 	elf = ls_dir(name,0);
 	elf_program = read_elf(elf);
-	create_process((void*)elf_program->entry,THREAD,3,argc,argv);
-	return 1;
+	create_process((void*)elf_program->entry,THREAD,0,argc,argv);
+	return 0;
 }
 
 #define KERNEL_STACK_SIZE  4096
 void _task_initialize(void)
 {
 	__asm__ __volatile__("cli");
-	current_task = ready_queue = (task_t*)kmalloc(sizeof(task_t));
+	current_task = ready_queue = (task_t*)malloc_(sizeof(task_t));
 	memset((task_t *)current_task, 0, sizeof(task_t));
 	current_task->id = pid++;
     current_task->esp = 0;
@@ -47,10 +47,21 @@ void _task_initialize(void)
     current_task->priority = PRIO_HIGH;
     current_task->time_to_run = 10;
     current_task->ready_to_run = 1;
-	current_task->kernel_stack = (u32)kmalloc(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
+	current_task->kernel_stack = (u32)malloc_a(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
 	scheduler_install();
 	insert_current_task(current_task);
 	__asm__ __volatile__("sti");
+}
+
+u32 geteip()
+{
+
+return current_task->eip;
+}
+
+s32 getpid()
+{
+return current_task->id;
 }
 
 void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u8 privilege, int priority,task_type type)
@@ -60,20 +71,45 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	
 	task_switching = false;
 	memset(new_task, 0, sizeof(task_t));
-	new_task->kernel_stack = kmalloc(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
-	regs_t *kernel_stack = (regs_t*)kmalloc(sizeof(regs_t)+KERNEL_STACK_SIZE);
+	new_task->kernel_stack = (u32)malloc_a(KERNEL_STACK_SIZE)+KERNEL_STACK_SIZE;
+	
     
 	new_task->state = TASK_RUNNING;
 	
+		current_task->priority = priority;
+	new_task->privilege = privilege;
+	new_task->type = type;
+	
+	new_task->state = TASK_RUNNING;
+	new_task->priority = priority;
+	switch(new_task->priority)
+	{
+		case PRIO_DEAD:
+			new_task->time_to_run = 0;
+		break;
+		case PRIO_IDLE:
+			new_task->time_to_run = 3;
+		break;
+		case PRIO_LOW:
+			new_task->time_to_run = 5;
+		break;
+		case PRIO_HIGH:
+			new_task->time_to_run = 10;
+		break;
+		default:
+			new_task->time_to_run = 10;
+		break;
+	}
+
     task_t *tmp_task = (task_t*)ready_queue;
 	while(tmp_task->next)
 	{
 		tmp_task = tmp_task->next;
 	}
-	current_task->priority = priority;
 	tmp_task->next = new_task;
-	new_task->privilege = privilege;
-	new_task->type = type;
+	
+	regs_t *kernel_stack = (regs_t*)malloc_(sizeof(regs_t));
+	
     u32 code_segment = 0x08, data_segment = 0x10;
     u32 eflags = 0x0202;
     kernel_stack->useresp =(u32)&exit;
@@ -116,75 +152,127 @@ void _get_task_stack(task_t *new_task,void (*entry)(),size_t argc, char** argv,u
 	new_task->esp = (u32)kernel_stack; 
 	new_task->id = pid++;
 	
-	
+	task_switching = true;
 	insert_current_task(new_task);
 	__asm__ __volatile__("sti");
 	
 }
 
-s32 getpid()
+
+void create_task_vm86(void (*thread)(),char *test)
 {
-	return current_task->id;
-}
-
-u32 _task_switch(u32 esp)
-{
-
-			
-	if(!current_task) return esp;
-		
-	current_task->esp = esp;
-	
-	task_t *old_task = current_task;
-	current_task = get_current_task();
-	if(old_task == current_task)
-		return esp;
- 			
-		
-	volatile task_t *t;
-	for (t = ready_queue; t != 0; t = t->next){
-		if (t->state == TASK_SLEEPING && t->wakeup_time <= gettickcount()){
-				t->wakeup_time = 0;
-				t->state = TASK_RUNNING;
-		}
-	}
-
-	while (current_task != 0 && current_task->state == TASK_SLEEPING) 
-          current_task = current_task->next;
-	
-	if(!current_task)
-		current_task = ready_queue;
-		
-	set_kernel_stack(current_task->kernel_stack+KERNEL_STACK_SIZE);
-	return current_task->esp;
-}
-
-void create_v86_task(void (*thread)())
-{
-	task_t* new_task = kmalloc(sizeof(task_t));
+	task_t* new_task = malloc_(sizeof(task_t));
 	
 	_get_task_stack(new_task,thread,0,0,3,PRIO_HIGH,VM86);	
-   
+   sleep2(40);
 }
 
 void create_user_task(void (*thread)())
 {
-	task_t* new_task = kmalloc(sizeof(task_t));
+	task_t* new_task = malloc_(sizeof(task_t));
 	_get_task_stack(new_task,thread,0,0,3,PRIO_LOW,THREAD);
+	sleep2(40);
 }
 
-void create_kernel_task(void (*thread)(),int priority)
+void create_task_thread(void (*thread)(),int priority)
 {
-	task_t* new_task = kmalloc(sizeof(task_t));
+	task_t* new_task = malloc_(sizeof(task_t));
 	_get_task_stack(new_task,thread,0,0,0,priority,THREAD);
+	sleep2(40);
 }
 
 void create_process(void (*process)(),task_type type,u8 privilege, int argc, char** argv)
 {
-	task_t* new_task = kmalloc(sizeof(task_t));
-	_get_task_stack(new_task,process,argc,(uintptr_t)argv,privilege,PRIO_HIGH, type);	
+	task_t* new_task = malloc_(sizeof(task_t));
+	_get_task_stack(new_task,process,argc,(uintptr_t)argv,privilege,PRIO_HIGH, type);
+	sleep2(40);	
 		 
 }
+
+
+u32 _task_switch(u32 esp)
+{
+if(!current_task) return esp;
+current_task->esp = esp;
+ task_t* oldTask = current_task; 
+	current_task = get_current_task();
+ 	
+ 
+ if(oldTask == current_task) return esp; // No task switch because old==new
+
+if(current_task->priority == PRIO_LOW)
+			current_task->time_to_run = 3;
+   
+        if( current_task->priority == PRIO_IDLE)
+			current_task->time_to_run = 2;	
+		
+		 if( current_task->priority == PRIO_HIGH)
+			current_task->time_to_run = 4;
+
+for (volatile task_t *t = ready_queue; t != 0; t = t->next){
+  if (t->state == TASK_SLEEPING && t->wakeup_time <= gettickcount()){
+t->wakeup_time = 0;
+t->state = TASK_RUNNING;
+  }
+  
+}
+
+while (current_task != 0 && current_task->state == TASK_SLEEPING) {
+        
+               current_task = current_task->next;
+               
+                }
+if(!current_task)
+{
+
+current_task = ready_queue;
+
+}
+
+if (current_task == FPUTask)
+ 	{
+ 	__asm__ volatile("CLTS"); 
+	}
+ 	else
+ 	{
+ 	u32 cr0;
+ 	__asm__ volatile("mov %%cr0, %0": "=r"(cr0));
+ 	cr0 |= BIT(3); 
+	__asm__ volatile("mov %0, %%cr0":: "r"(cr0));
+ 	} 
+	set_kernel_stack(current_task->kernel_stack+KERNEL_STACK_SIZE); //update the tss entry when we changes stack!
+return current_task->esp;
+}
+
+
+void sleep2(u32 milliseconds) 
+{
+	const u32 start_ticks = gettickcount();
+	u32 ticks_to_wait = milliseconds / (1000 / TIMER_HZ);
+
+	if (ticks_to_wait == 0)
+	ticks_to_wait = 1;
+	
+	current_task->state = TASK_SLEEPING;
+	current_task->wakeup_time = start_ticks + ticks_to_wait;
+
+	__asm__ __volatile__("int $0x20");
+}
+
+
+void switch_context() 
+ 	{
+ 	if(scheduler_shouldSwitchTask()) 
+ 	__asm__ volatile("int $0x20");
+ 	else
+ 	{
+ 	__asm__ volatile("hlt");
+ 	__asm__ volatile("int $0x20");
+ 	}
+ 	}
+ 
+
+
 
 void exit()
 {
@@ -192,7 +280,7 @@ void exit()
 	current_task->priority = PRIO_DEAD;
 	current_task->time_to_run = 0;
     current_task->ready_to_run = 0;
-task_t* tmp_task = (task_t*)ready_queue;
+	task_t* tmp_task = (task_t*)ready_queue;
     do
     {
         if(tmp_task->next == current_task)
@@ -213,32 +301,52 @@ task_t* tmp_task = (task_t*)ready_queue;
     __asm__ __volatile__("sti");
 	counter--;
 	task_switching = 1; 
+	switch_context();
 }
 
-void sleep_task(u32 milliseconds) 
+void _exit(int status)
 {
-	const u32 start_ticks = gettickcount();
-	u32 ticks_to_wait = milliseconds / (1000 / TIMER_HZ);
+    __asm__ volatile("cli");
+ current_task->priority = PRIO_DEAD;
+current_task->time_to_run = 0;
+     current_task->ready_to_run = 0;
+      task_t* tmp_task = (task_t*)ready_queue;
+    do
+    {
+        if(tmp_task->next == current_task)
+        {
+            tmp_task->next = current_task->next;
+        }
+        if(tmp_task->next)
+        {
+            tmp_task = tmp_task->next;
+        }
+    }
+    while (tmp_task->next);
+delete_current_task(current_task);
+  
+    //free((void *)((u32)current_task->kernel_stack - KERNEL_STACK_SIZE)); // free kernelstack
+    //free((void *)current_task);
 
-	if (ticks_to_wait == 0)
-	ticks_to_wait = 1;
-	
-	current_task->state = TASK_SLEEPING;
-	current_task->wakeup_time = start_ticks + ticks_to_wait;
-
-	__asm__ __volatile__("int $0x20");
+  
+    
+    __asm__ volatile("sti");
+counter--;
+task_switching = 1;
+       // switch_context(); // switch to next task
+    
 }
 
-void task1()
+void task01()
 {			
-	kprint("Hello! from kernel task!\n");	
-	sleep_task(20000);
+	printk("Hello! from kernel task!\n");	
+	sleep2(20000);
 	for(;;);
 }
 
-void task3()
+void task02()
 {	
-	kprint("Hello! from user task! %d\n", getpid());
+	printk("Hello! from user task! %d\n", getpid());
 	for(;;);
 }
 
@@ -272,17 +380,18 @@ void vesa_com_task()
 
 int IdleTask(void)
 {
+	
 	while(1)
 	{		
 		if(getpid() == 4)
-		 sleep_task(25);
+		 sleep2(25);
 		
 		if(getpid() == 5)
-		 sleep_task(1000);
+		 sleep2(1000);
 		 
 		if(getpid() == 6)
-		 sleep_task(500);
-		kprint("PID NUMBER FOR TASK %d\n", getpid());     
+		 sleep2(500);
+		printk("PID NUMBER FOR TASK %d\n", getpid());     
 	}
 	return 0;
 }
@@ -290,16 +399,21 @@ int IdleTask(void)
 void TASK_testing()
 {	 
 	
+	create_task_thread(IdleTask,PRIO_HIGH);
+	create_task_thread(IdleTask,PRIO_HIGH);
+	create_user_task(IdleTask);
+	create_user_task(IdleTask);
+	create_task_thread(IdleTask,PRIO_HIGH);
+	create_task_thread(IdleTask,PRIO_HIGH);
 	/*vesa_task();*/
-	/*create_kernel_task(task1,PRIO_HIGH);
-	create_kernel_task(task3,PRIO_HIGH);
+	
 	/*
 	create_kernel_task(IdleTask,PRIO_IDLE);	
 	create_kernel_task(IdleTask,PRIO_LOW);	
 	create_kernel_task(IdleTask,PRIO_HIGH);	*/
 }
 
-int kill(int pid) {
+void kill(int pid) {
   volatile task_t *t;
   volatile task_t *prev = ready_queue;
   for (t = ready_queue; t != 0; prev = t, t = t->next) {

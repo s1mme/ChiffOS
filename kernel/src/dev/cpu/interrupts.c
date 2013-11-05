@@ -25,7 +25,7 @@ extern void irq15();
 
 
 void *irq_routines[256] = {0}; 
-void register_device(int irq, u32 (*handler)(u32 r))
+void install_device(int irq, u32 (*handler)(u32 r))
 {
 	irq_routines[irq] = handler;
 }
@@ -110,7 +110,7 @@ void isrs_install()
     idt_set_gate(29, (unsigned)isr29, 0x08, 0x8E);
     idt_set_gate(30, (unsigned)isr30, 0x08, 0x8E);
     idt_set_gate(31, (unsigned)isr31, 0x08, 0x8E);
-    idt_set_gate(128, (unsigned)isr128, 0x08, 0xee); 
+    idt_set_gate(128, (unsigned)isr32, 0x08, 0xee); 
 }
  
 
@@ -163,32 +163,33 @@ u32 isr_handler(u32 esp)
 	if(handler)
 		handler(r);
 	
-	if (r->eflags & 0x20000) 
+	/*if (r->eflags & 0x20000) 
     {
         if (vm86_opcode_handler(r))
         {
-			/*kprint("everything is good!");*/		
-		}
+			/*printk("everything is good!");*/		
+		/*}
 		else
         {       			
-            kprint("v86: opcode error!\n");
+            printk("v86: opcode error!\n");
         }
 	}
 	else
-	{	
-	if(r->int_no < 32)
+	{*/	
+
+//}
+if(r->int_no < 32)
 	{
-		kprint("Received interrupt: %d (%s)\n", r->int_no, exception_messages[r->int_no]);
-		kprint("EAX=%x EBX=%x ECX=%x EDX=%x\n", r->eax, r->ebx, r->ecx, r->edx);
-		kprint("ESI=%x EDI=%x EBP=%x\n", r->esi, r->edi, r->ebp);
-		kprint("CS =%x EIP=%x EFLAGS=%x USERESP=%x\n", r->cs, r->eip, r->eflags, r->useresp);
-		kprint("INT=%d ERR_CODE=%x DS=%x\n", r->int_no, r->err_code, r->ds);
-		kprint("\n");
+		printk("Received interrupt: %d (%s)\n", r->int_no, exception_messages[r->int_no]);
+		printk("EAX=%x EBX=%x ECX=%x EDX=%x\n", r->eax, r->ebx, r->ecx, r->edx);
+		printk("ESI=%x EDI=%x EBP=%x\n", r->esi, r->edi, r->ebp);
+		printk("CS =%x EIP=%x EFLAGS=%x USERESP=%x\n", r->cs, r->eip, r->eflags, r->useresp);
+		printk("INT=%02dd ERR_CODE=0x%x DS=%x\n", r->int_no, r->err_code, r->ds);
+		printk("\n");
 		
 		for(;;);
 			
 	}
-}
 	return esp;
 	
 }
@@ -200,12 +201,52 @@ u32 irq_handler(u32 esp)
 	
 	if(task_switching)
 		esp = _task_switch(esp);
-
+task_switching = 0;
 	u32 (*handler)(struct regs *r); 
 	
 	handler = irq_routines[r->int_no - 32];	
 	if(handler)
 		handler(r);
+	
+	if(r->int_no == 7)
+    {
+		
+    __asm__ __volatile__("CLTS"); 
+
+ 
+    if (FPUTask)
+    {
+      
+        __asm__ __volatile__("fsave (%0)" :: "r" (FPUTask->FPUptr));
+    }
+
+    FPUTask = current_task;
+
+
+    if (current_task->FPUptr)
+    {
+     
+        __asm__ __volatile__("frstor (%0)" :: "r" (current_task->FPUptr));
+    }
+    else
+    {
+       
+        current_task->FPUptr = malloc_(10800);
+    }
+}
+
+	   if (r->eflags & 0x20000) 
+    {
+        if (vm86sensitiveOpcodehandler(r)) 
+        {
+		
+	}
+		else
+        {
+            
+           // puts("nvm86: sensitive opcode error\n");
+        }
+	}
 	
 	if(r->int_no >= 40) 
 	     outb(0xA0, 0x20);

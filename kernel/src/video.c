@@ -1,8 +1,7 @@
 #include <types.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <video.h>
 #include <kutils.h>
+
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 u16 *video_ram = (u16 *)0xB8000;
@@ -59,7 +58,7 @@ void scroll(void)
     }
 }
 
-void kputch(char c)
+void putch(char c)
 {
 	u16 *where;
 	 if(c == 0x08)
@@ -96,16 +95,17 @@ void kputch(char c)
 	update_cursor();
 }
 
-void kputs(const char *text)
+void puts(const char *text)
 {
 	u32 i = 0;
 	while(i < strlen(text))
-		kputch(text[i++]);
+		putch(text[i++]);
 		
 }
 
 void vprintf(const char *args, va_list ap)
 {
+	char buffer[100];
 	while(*args)
 		{
 			switch(*args)
@@ -114,22 +114,24 @@ void vprintf(const char *args, va_list ap)
 				switch(*(++args))
 					{
 						case 'c':
-							 kputch((s8)va_arg(ap, s32));
+							 putch((s8)va_arg(ap, s32));
+							 break;
     					case 'x':
-							kputhex(va_arg(ap, u32));
+							monitor_write_hex(va_arg(ap, u32));
 						break;
 						case 'd':
-							kputint(va_arg(ap, s32));
+							put_dec(va_arg(ap, s32));
 						break;
 						case 's':
-							kputs(va_arg(ap, char*));
+							puts(va_arg(ap, char*));
 						break;					
 						default:
+						--args;
 						break;
 					}								
 			break;
 			default:
-			kputch(*args);
+			putch(*args);
 			break;
 			}			
 		args++; 	
@@ -153,16 +155,16 @@ while (p < (char *)buf + 20 - 1 /* NULL termination */) {
 char c = getchar();
 
 if (c >= ' ' || c == '\n') {
-kputch(c); 
+putch(c); 
 update_cursor();
 }
 else if (c == '\b') {
 	
 if (p > (char *)buf) {
 p--;
-kputch(c);
-kputch(' ');
-kputch(c);
+putch(c);
+putch(' ');
+putch(c);
 update_cursor();
 ret--;
 }
@@ -172,8 +174,8 @@ else if (c == -1) {
 if (ret > 0)
 continue;
 else {
-kputch('^');
-kputch('D');
+putch('^');
+putch('D');
 return 0;
 }
 }
@@ -197,7 +199,7 @@ ret++;
 return ret;
 }
 
-void kprint(const char *fmt, ...)
+void printk(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -205,4 +207,132 @@ void kprint(const char *fmt, ...)
 	va_end(ap);
     update_cursor();
     
+}
+
+void put_dec(u32 n)
+{
+
+    if (n == 0)
+    {
+        putch('0');
+        return;
+    }
+
+    s32 acc = n;
+    char c[32];
+    int i = 0;
+    while (acc > 0)
+    {
+        c[i] = '0' + acc%10;
+        acc /= 10;
+        i++;
+    }
+    c[i] = 0;
+
+    char c2[32];
+    c2[i--] = 0;
+    int j = 0;
+    while(i >= 0)
+    {
+        c2[i--] = c[j++];
+    }
+    puts(c2);
+
+}
+
+void monitor_write_hex(u32 n)
+{
+    s32 tmp;
+
+    puts("0x");
+
+    char noZeroes = 1;
+
+    int i;
+    for (i = 28; i > 0; i -= 4)
+    {
+        tmp = (n >> i) & 0xF;
+        if (tmp == 0 && noZeroes != 0)
+        {
+            continue;
+        }
+    
+        if (tmp >= 0xA)
+        {
+            noZeroes = 0;
+            putch(tmp-0xA+'a' );
+        }
+        else
+        {
+            noZeroes = 0;
+            putch( tmp+'0' );
+        }
+    }
+  
+}
+/// http://en.wikipedia.org/wiki/Itoa
+void reverse(char* s)
+{
+    char c;
+
+    for (s32 i=0, j=strlen(s)-1; i<j; i++, j--)
+    {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+
+s8 ctoi(char c) {
+    if (c < 48 || c > 57) {
+        return(-1);
+    }
+    return(c-48);
+}
+char* utoa(u32 n, char* s)
+{
+    u32 i = 0;
+    do 
+    {
+        s[i++] = n % 10 + '0'; 
+    }
+    while ((n /= 10) > 0);     
+    s[i] = '\0';
+    reverse(s);
+    return(s);
+}
+
+char* itoa(s32 n, char* s)
+{
+    bool sign = n < 0;
+    if (sign)   
+    {
+        n = -n;
+    }
+    u32 i = 0;
+    do 
+    {
+        s[i++] = n % 10 + '0'; 
+    }
+    while ((n /= 10) > 0);     
+
+    if (sign)
+    {
+        s[i++] = '-';
+    }
+    s[i] = '\0';
+    reverse(s);
+    return(s);
+}
+
+void i2hex(u32 val, char* dest, u32 len)
+{
+    char* cp = &dest[len];
+    while (cp > dest)
+    {
+        char x = val & 0xF;
+        val >>= 4;
+        *--cp = x + ((x >= 9) ? 'A' - 10 : '0');
+    }
+    dest[len]='\0';
 }

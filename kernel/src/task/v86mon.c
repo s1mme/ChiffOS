@@ -5,7 +5,9 @@
 static volatile current_t Current;
 int status;
 #define BIT(n) (1<<(n))
-bool vm86_opcode_handler(regs_t *ctx)
+static volatile current_t Current;
+int status;
+bool vm86sensitiveOpcodehandler(struct regs *ctx)
 {
     u8*  ip      = FP_TO_LINEAR(ctx->cs, ctx->eip);
     u16* ivt     = 0;
@@ -17,14 +19,14 @@ bool vm86_opcode_handler(regs_t *ctx)
     {
         switch (ip[0])
         {
-          case 0x66:
+          case 0x66: 
         
             isOperand32 = true;
             ip++;
             ctx->eip++;
             break;
 
-        case 0x67: 
+        case 0x67: // A32
           
             ip++;
             ctx->eip++;
@@ -66,7 +68,7 @@ bool vm86_opcode_handler(regs_t *ctx)
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-        case 0x9D: /*POPF*/
+        case 0x9D: // POPF
          
 
             if (isOperand32)
@@ -99,14 +101,14 @@ bool vm86_opcode_handler(regs_t *ctx)
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-case 0xEE: /* OUT DX, AL */
+case 0xEE: // OUT DX, AL
          
             outb(ctx->edx, ctx->eax);
             ctx->eip++;
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-        case 0xED: 
+        case 0xED: // IN AX,DX and IN EAX,DX
             if (!isOperand32)
             {
               
@@ -121,7 +123,7 @@ case 0xEE: /* OUT DX, AL */
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-        case 0xEC: /* IN AL,DX */
+        case 0xEC: // IN AL,DX
         
             ctx->eax = (ctx->eax & 0xFF00) + inb(ctx->edx);
             ctx->eip++;
@@ -129,16 +131,15 @@ case 0xEE: /* OUT DX, AL */
             return true;
 
 
-        case 0xCD: /* INT */
+        case 0xCD: 
         
             switch (ip[1])
             {
             case 0x30:
            
-               return false;
+                return true;
 
             case 0x20:
-            return false;
             case 0x21:
                 return false;
 
@@ -161,11 +162,11 @@ case 0xEE: /* OUT DX, AL */
                 ctx->cs  = ivt[2 * ip[1] + 1];
                 ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
          
-               return true;
+                return true;
             }
             break;
 
-        case 0xCF: /* IRET */
+        case 0xCF: // IRET
     
             ctx->eip    = stack[2];
             ctx->cs     = stack[1];
@@ -177,36 +178,31 @@ case 0xEE: /* OUT DX, AL */
 
             return true;
 
-        case 0xFA: /* CLI */
+        case 0xFA: // CLI
   
             Current.v86_if = false;
             ctx->eip++;
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-        case 0xFB: /* STI */
+        case 0xFB: // STI
      
             Current.v86_if = true;
             ctx->eip++;
             ip = FP_TO_LINEAR(ctx->cs, ctx->eip);
             return true;
 
-       case 0xF5: /* HLT */
-			
-            exit();
-            return true; 
-       case 0xF4: /* HLT */
+       case 0xF4: // HLT
 			
             exit();
             return true; 
 
-        default: 
-		kprint("unhandled opcode %x", ip[0]);
+        default:
+       
             return false;
         }
     }
-
-return false;
+    return false;
 }
 
 

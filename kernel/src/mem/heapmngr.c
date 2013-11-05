@@ -6,7 +6,7 @@
 /*heap implementation with minimal error-checking*/
 
 void *_heapmngr_get_element(u32 i, table_t *table);
-extern heap_t * heap;
+extern heap_t * kheap;
 table_t _heapmngr_table_initialize(u32 sz, void *addr)
 {
 	table_t table;
@@ -38,14 +38,24 @@ void _heapmngr_insert_element(void *element, table_t *table )
 	}
 }
 
-s32 _heapmngr_find_element(u32 sz, heap_t *heap)
+s32 _heapmngr_find_element(u32 sz,u8 page_align, heap_t *heap)
 {
 	u32 i = 0;
 	while(i < heap->table.size)
 {
 	desc_head *header = _heapmngr_get_element(i, &heap->table);
-
-	if(header->size >= sz)
+	if(page_align > 0)
+	{
+		
+		u32 location = (u32)header;
+		s32 offset = 0;
+		if((location+sizeof(desc_head) & 0xfffff000 != 0)) //make sure the adress is page aligned, important for ELF parsing!
+		offset = 0x1000 - (location+sizeof(desc_head))%0x1000;
+		s32 hole_size = (s32)header->size - offset;
+		if(hole_size >= (s32)sz)
+		break;
+	}
+	else if(header->size >= sz)
 		break;
 		i++;
 	}
@@ -73,7 +83,7 @@ void _heapmngr_delete_element(u32 i, table_t *table)
 
 heap_t *_heapmngr_initialize(u32 heap_pool_start_pos, u32 heap_pool_end_pos, u32 sz)
 {
-	heap = (heap_t*)p_kmalloc(sizeof(heap_t),1,0);
+	heap_t *heap  = (heap_t*)p_kmalloc(sizeof(heap_t),1,NULL);
 	memset(heap, 0, sizeof(heap_t));
 
 	heap->table = _heapmngr_table_initialize(sz,(void*)heap_pool_start_pos);
@@ -93,7 +103,7 @@ void *request_kmalloc(u32 sz, u32 align, heap_t *heap)
 {
 	desc_head *old_element;
 	u32 new_size = sz + sizeof(desc_head) + sizeof(desc_foot);
-	s32 location = _heapmngr_find_element(new_size, heap);
+	s32 location = _heapmngr_find_element(new_size,1, heap);
 	
 	old_element = _heapmngr_get_element(location, &heap->table);
 	
@@ -104,16 +114,45 @@ void *request_kmalloc(u32 sz, u32 align, heap_t *heap)
 	u32 element_backup = (u32)old_element;
 	u32 element_backup_size = old_element->size;
 	
+		if (align && element_backup&0xFFFFF000)
+   {
+       u32 new_location   = element_backup + 0x1000 - (element_backup&0xFFF) - sizeof(desc_head);
+       desc_head *hole_header = (desc_head *)element_backup;
+       hole_header->size     = 0x1000 - (element_backup&0xFFF) - sizeof(desc_head);
+       hole_header->magic    = HEAP_MAGIC;
+       hole_header->is_hole  = 1;
+       desc_foot *hole_footer = (desc_foot *) ( (u32)new_location - sizeof(desc_foot) );
+       hole_footer->magic    = HEAP_MAGIC;
+       hole_footer->header   = hole_header;
+       element_backup         = new_location;
+       element_backup_size        = element_backup_size - hole_header->size;
+   }
+   else
+   {
+     /*todo? */
+
+   } 
+	
+	
 	_heapmngr_delete_element(location, &heap->table); /*delete current element*/
 	
-	old_element->size = new_size;
 	
-	desc_head *new_element = (desc_head *)(element_backup +  sz + sizeof(desc_head) + sizeof(desc_foot));
-	new_element->size = element_backup_size - new_size;
+	desc_head *block_header = (desc_head *)element_backup;
+	block_header->is_hole = 0;
+	block_header->size = new_size;
 	
-	_heapmngr_insert_element((void*)new_element,&heap->table); /*add a new element*/
+	desc_foot *block_footer = (desc_foot *) (element_backup + sizeof(desc_head) + sz);
+	block_footer->header = block_header;
 	
-	return (void *)((u32)element_backup + sizeof(desc_head)); 
+	//setup a new hole
+    desc_head *hole_header = (desc_head *) (element_backup + sizeof(desc_head) + sz + sizeof(desc_foot));
+     
+    hole_header->size = element_backup_size - new_size;
+	
+	_heapmngr_insert_element((void*)hole_header,&heap->table); /*add a new element*/
+	
+
+	return (void *)((u32)block_header + sizeof(desc_head));
 }
 
 void release_kmalloc(void *ptr, heap_t *heap)
@@ -138,12 +177,17 @@ void release_kmalloc(void *ptr, heap_t *heap)
 	_heapmngr_insert_element((void*)element_old_head, &heap->table);
 }
 
-void *kmalloc(u32 sz)
+void *malloc_(u32 sz)
 {
-	return request_kmalloc(sz, 1, heap);
+	return request_kmalloc(sz, 0, kheap);
+}
+
+void *malloc_a(u32 sz)
+{
+	return request_kmalloc(sz, 1, kheap);
 }
 
 void free(void *ptr)
 {
-	release_kmalloc(ptr, heap);
+	release_kmalloc(ptr, kheap);
 }
